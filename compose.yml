@@ -1,0 +1,36 @@
+services:
+  mysql:
+    image: mysql:8.0.40
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: datadrive
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "33306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./datadrive.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./my.cnf:/etc/mysql/my.cnf
+    command: --default-authentication-plugin=mysql_native_password --performance-schema=ON --innodb-buffer-pool-size=256M
+
+  memcached:
+    image: memcached:1.6
+    container_name: memcached
+    ports:
+      - "11211:11211"
+
+  datadrive-app:
+    container_name: datadrive-app
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    environment:
+      DB_USER: user
+      DB_PASSWORD: password
+      DB_NAME: datadrive
+
+volumes:
+  db_data:
