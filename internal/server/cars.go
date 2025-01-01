@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/go-playground/validator/v10"
+	"github.com/go-playground/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/ntentasd/db-deliverable3/internal/database"
 	"github.com/ntentasd/db-deliverable3/internal/models"
 )
 
-func SetupCarRoutes(app *fiber.App, carDB *database.CarDB) {
+func SetupCarRoutes(app *fiber.App, carDB *database.CarDB, damageDB *database.DamageDB, serviceDB *database.ServiceDB) {
 	carGroup := app.Group("/cars")
 
 	// Get all cars
@@ -51,25 +51,48 @@ func SetupCarRoutes(app *fiber.App, carDB *database.CarDB) {
 	})
 
 	// Update car status
-	carGroup.Put("/:license_plate/status", func(c *fiber.Ctx) error {
+	carGroup.Put("/:license_plate", func(c *fiber.Ctx) error {
 		licensePlate := c.Params("license_plate")
-		var input struct {
-			Status models.Status `json:"status"`
+		if err := validateLicensePlate(licensePlate); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
-		if err := c.BodyParser(&input); err != nil {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid input"})
+		_, err := carDB.GetCarByLicensePlate(licensePlate)
+		if err != nil {
+			if err == database.ErrCarNotFound {
+				return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+			}
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
-		if valid := input.Status.ValidateStatus(); valid != true {
+		var car struct {
+			Make      string        `json:"make" db:"make" validate:"required"`
+			Model     string        `json:"model" db:"model" validate:"required"`
+			Status    models.Status `json:"status,omitempty" db:"status" validate:"required"`
+			CostPerKm float64       `json:"cost_per_km" db:"cost_per_km" validate:"required,gt=0"`
+			Location  string        `json:"location" db:"location" validate:"required"`
+		}
+		if err := c.BodyParser(&car); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid data form"})
+		}
+		if !car.Status.ValidateStatus() {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "status can either be available, rented or maintenance"})
 		}
 		validate := validator.New()
-		if err := validate.Struct(input); err != nil {
+		if err := validate.Struct(car); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "validation failed"})
 		}
-		if err := carDB.UpdateCarStatus(licensePlate, input.Status.String()); err != nil {
+		tempCar := models.Car{
+			LicensePlate: licensePlate,
+			Make:         car.Make,
+			Model:        car.Model,
+			Status:       car.Status,
+			CostPerKm:    car.CostPerKm,
+			Location:     car.Location,
+		}
+		updatedCar, err := carDB.UpdateCar(tempCar)
+		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
-		return c.SendStatus(http.StatusOK)
+		return c.Status(http.StatusOK).JSON(updatedCar)
 	})
 
 	// Delete a car
@@ -86,6 +109,34 @@ func SetupCarRoutes(app *fiber.App, carDB *database.CarDB) {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 		return c.Status(http.StatusOK).JSON(car)
+	})
+
+	carGroup.Get("/:license_plate/details", func(c *fiber.Ctx) error {
+		licensePlate := c.Params("license_plate")
+
+		// Fetch car details
+		car, err := carDB.GetCarByLicensePlate(licensePlate)
+		if err != nil {
+			return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Car not found"})
+		}
+
+		// Fetch damages
+		damages, err := damageDB.GetDamagesByLicensePlate(licensePlate)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		// Fetch services
+		services, err := serviceDB.GetServicesByLicensePlate(licensePlate)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		return c.JSON(fiber.Map{
+			"car":      car,
+			"damages":  damages,
+			"services": services,
+		})
 	})
 }
 
