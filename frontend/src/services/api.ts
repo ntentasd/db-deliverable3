@@ -10,7 +10,7 @@ interface Car {
 }
 
 const api = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: (window as any).env?.REACT_APP_BACKEND_URL || "http://localhost:8000",
 });
 
 export const getAllCars = async () => {
