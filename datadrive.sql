@@ -269,6 +269,8 @@ INSERT INTO `Trips` VALUES (1,'moutas@gmail.com','NIG3345','2024-12-19 12:25:17'
 /*!40000 ALTER TABLE `Trips` ENABLE KEYS */;
 UNLOCK TABLES;
 
+CREATE INDEX idx_trips_user_email_end_time ON trips (user_email, end_time);
+
 --
 -- Temporary view structure for view `carservicedamagesummary`
 --
