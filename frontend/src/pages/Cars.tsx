@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import CarList from "../components/CarList";
 import CarForm from "../components/CarForm";
-import { getAllCars } from "../services/api";
+import { getAllCars } from "../services/carsApi";
 
 const Cars: React.FC = () => {
   const [cars, setCars] = useState([]);

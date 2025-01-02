@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getCarByLicensePlate, updateCar } from "../services/api";
+import { getCarByLicensePlate, updateCar } from "../services/carsApi";
 
 interface Car {
   license_plate: string;

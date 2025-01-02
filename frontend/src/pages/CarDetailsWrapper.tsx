@@ -1,7 +1,7 @@
 // src/components/CarDetailsWrapper.tsx
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getCarDetails } from "../services/api";
+import { getCarDetails } from "../services/carsApi";
 import CarDetails from "../components/CarDetails";
 
 const CarDetailsWrapper: React.FC = () => {

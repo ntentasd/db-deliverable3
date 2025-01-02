@@ -18,6 +18,11 @@ const Navbar = () => {
               Cars
             </Link>
           </li>
+          <li>
+            <Link to="/trips" className="hover:underline">
+              Trips
+            </Link>
+          </li>
         </ul>
       </div>
     </nav>
