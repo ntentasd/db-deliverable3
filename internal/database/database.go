@@ -6,6 +6,7 @@ import (
 )
 
 type Database struct {
+	UserDB    *UserDB
 	CarDB     *CarDB
 	DamageDB  *DamageDB
 	ServiceDB *ServiceDB
@@ -18,6 +19,7 @@ func InitDB(db *sql.DB) (*Database, error) {
 	}
 
 	return &Database{
+		UserDB:    NewUserDatabase(db),
 		CarDB:     NewCarDatabase(db),
 		DamageDB:  NewDamageDB(db),
 		ServiceDB: NewServiceDB(db),

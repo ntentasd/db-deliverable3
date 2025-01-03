@@ -18,13 +18,51 @@ func NewCarDatabase(db *sql.DB) *CarDB {
 	return &CarDB{DB: db}
 }
 
-func (db *CarDB) GetAllCars() ([]models.Car, error) {
-	query := `SELECT * FROM Cars`
+func (db *CarDB) GetAllCars(page, pageSize int) ([]models.Car, error) {
+	offset := (page - 1) * pageSize
+
+	query := `
+		SELECT *
+		FROM Cars
+		LIMIT ? OFFSET ?
+	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := db.DB.QueryContext(ctx, query)
+	rows, err := db.DB.QueryContext(ctx, query, pageSize, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var cars []models.Car
+	for rows.Next() {
+		var car models.Car
+		if err := rows.Scan(
+			&car.LicensePlate, &car.Make, &car.Model, &car.Status, &car.CostPerKm, &car.Location,
+		); err != nil {
+			return nil, err
+		}
+		cars = append(cars, car)
+	}
+	return cars, nil
+}
+
+func (db *CarDB) GetAllAvailableCars(page, pageSize int) ([]models.Car, error) {
+	offset := (page - 1) * pageSize
+
+	query := `
+		SELECT *
+		FROM Cars
+		WHERE status = 'AVAILABLE'
+		LIMIT ? OFFSET ?
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := db.DB.QueryContext(ctx, query, pageSize, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -60,13 +98,21 @@ func (db *CarDB) GetCarByLicensePlate(licensePlate string) (models.Car, error) {
 }
 
 func (db *CarDB) InsertCar(car models.Car) error {
-	query := "INSERT INTO Cars (license_plate, make, model, status, cost_per_km, location) VALUES (?, ?, ?, ?, ?, ?)"
+	query := `
+		INSERT INTO
+		Cars (license_plate, make, model, status, cost_per_km, location)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`
 	_, err := db.DB.Exec(query, strings.ToUpper(car.LicensePlate), car.Make, car.Model, car.Status, car.CostPerKm, strings.ToUpper(car.Location))
 	return err
 }
 
 func (db *CarDB) UpdateCarStatus(tx *sql.Tx, licensePlate, status string) error {
-	query := "UPDATE Cars SET status = ? WHERE license_plate = ?"
+	query := `
+		UPDATE Cars
+		SET status = ?
+		WHERE license_plate = ?
+	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -111,12 +157,18 @@ func (db *CarDB) UpdateCar(car models.Car) (models.Car, error) {
 }
 
 var (
-	ErrCarNotFound = fmt.Errorf("car not found")
+	ErrCarNotFound       = fmt.Errorf("car not found")
+	ErrInvalidPageNumber = fmt.Errorf("invalid page number")
+	ErrInvalidPageSize   = fmt.Errorf("invalid page size")
 )
 
 func (db *CarDB) DeleteCar(licensePlate string) (models.Car, error) {
 	var car models.Car
-	query := "SELECT license_plate, make, model, cost_per_km, location FROM Cars WHERE license_plate = ?"
+	query := `
+		SELECT license_plate, make, model, cost_per_km, location
+		FROM Cars
+		WHERE license_plate = ?
+	`
 	err := db.DB.QueryRow(query, strings.ToUpper(licensePlate)).Scan(&car.LicensePlate, &car.Make, &car.Model, &car.CostPerKm, &car.Location)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -125,11 +177,49 @@ func (db *CarDB) DeleteCar(licensePlate string) (models.Car, error) {
 		return models.Car{}, err
 	}
 
-	deleteQuery := "DELETE FROM Cars WHERE license_plate = ?"
+	deleteQuery := `
+		DELETE FROM Cars
+		WHERE license_plate = ?
+	`
 	_, err = db.DB.Exec(deleteQuery, strings.ToUpper(licensePlate))
 	if err != nil {
 		return models.Car{}, err
 	}
 
 	return car, nil
+}
+
+func (db *CarDB) GetTotalCarCount() (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(*)
+		FROM Cars
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := db.DB.QueryRowContext(ctx, query).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (db *CarDB) GetTotalAvailableCarCount() (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(*)
+		FROM Cars
+		WHERE status = 'AVAILABLE'
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := db.DB.QueryRowContext(ctx, query).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }

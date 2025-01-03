@@ -18,17 +18,20 @@ func NewDamageDB(db *sql.DB) *DamageDB {
 }
 
 // GetDamagesByLicensePlate retrieves all damages for a specific car
-func (db *DamageDB) GetDamagesByLicensePlate(licensePlate string) ([]models.Damage, error) {
+func (db *DamageDB) GetDamages(licensePlate string, page, pageSize int) ([]models.Damage, error) {
+	offset := (page - 1) * pageSize
+
 	query := `
 		SELECT id, description, reported_date, repair_cost, repaired 
 		FROM Damages 
 		WHERE car_license_plate = ?
+		LIMIT ? OFFSET ?
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := db.DB.QueryContext(ctx, query, licensePlate)
+	rows, err := db.DB.QueryContext(ctx, query, licensePlate, pageSize, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -54,6 +57,24 @@ func (db *DamageDB) GetDamagesByLicensePlate(licensePlate string) ([]models.Dama
 	}
 
 	return damages, nil
+}
+
+func (db *DamageDB) GetTotalDamages(license_plate string) (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(*)
+		FROM Damages
+		WHERE car_license_plate = ?
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := db.DB.QueryRowContext(ctx, query, license_plate).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, err
 }
 
 // AddDamage adds a new damage entry to the database

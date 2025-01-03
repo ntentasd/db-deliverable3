@@ -18,17 +18,20 @@ func NewServiceDB(db *sql.DB) *ServiceDB {
 }
 
 // GetServicesByLicensePlate retrieves all services for a specific car
-func (db *ServiceDB) GetServicesByLicensePlate(licensePlate string) ([]models.Service, error) {
+func (db *ServiceDB) GetServices(licensePlate string, page, pageSize int) ([]models.Service, error) {
+	offset := (page - 1) * pageSize
+
 	query := `
 		SELECT id, description, service_date, service_cost 
 		FROM Services 
 		WHERE car_license_plate = ?
+		LIMIT ? OFFSET ?
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := db.DB.QueryContext(ctx, query, licensePlate)
+	rows, err := db.DB.QueryContext(ctx, query, licensePlate, pageSize, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -49,6 +52,24 @@ func (db *ServiceDB) GetServicesByLicensePlate(licensePlate string) ([]models.Se
 	}
 
 	return services, nil
+}
+
+func (db *ServiceDB) GetTotalServices(license_plate string) (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(*)
+		FROM Services
+		WHERE car_license_plate = ?
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := db.DB.QueryRowContext(ctx, query, license_plate).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, err
 }
 
 // AddService adds a new service entry to the database

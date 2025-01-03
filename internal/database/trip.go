@@ -99,6 +99,37 @@ func (db *TripDB) GetAllTripsForUser(email string, page, pageSize int) ([]models
 	return trips, nil
 }
 
+func (db *TripDB) GetActiveTrip(email string) (models.Trip, error) {
+	query := `
+		SELECT *
+		FROM Trips
+		WHERE user_email = ? AND end_time IS NULL
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var trip models.Trip
+
+	err := db.DB.QueryRowContext(ctx, query, email).Scan(
+		&trip.ID,
+		&trip.UserEmail,
+		&trip.CarLicensePlate,
+		&trip.StartTime,
+		&trip.EndTime,
+		&trip.DrivingBehavior,
+		&trip.Distance,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.Trip{}, ErrTripNotFound
+		}
+		return models.Trip{}, err
+	}
+
+	return trip, nil
+}
+
 func (db *TripDB) CreateTrip(tx *sql.Tx, email, licensePlate string) error {
 	query := `
 		INSERT INTO 
@@ -214,7 +245,11 @@ func (db *TripDB) GetTripByID(id string) (models.Trip, error) {
 
 func (db *TripDB) GetTotalTripCountForUser(email string) (int, error) {
 	var count int
-	query := `SELECT COUNT(*) FROM trips WHERE user_email = ?`
+	query := `
+		SELECT COUNT(*)
+		FROM trips
+		WHERE user_email = ?
+	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
