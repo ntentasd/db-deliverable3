@@ -6,6 +6,8 @@ import { useRefresh } from "../contexts/RefreshContext";
 const Trips: React.FC = () => {
   const { refreshKey, triggerRefresh } = useRefresh();
 
+  const isAuthenticated = !!localStorage.getItem("authToken");
+
   useEffect(() => {
   }, [refreshKey]);
 
@@ -13,7 +15,11 @@ const Trips: React.FC = () => {
     <div className="container mx-auto p-4">
       <div className="bg-white shadow-md rounded-lg p-6">
         <TripList key={refreshKey} />
-        <ActiveTripPopup onRefresh={triggerRefresh} />
+        {isAuthenticated ? (
+          <ActiveTripPopup onRefresh={triggerRefresh} />
+        ) : (
+          <></>
+        )}
       </div>
     </div>
   );

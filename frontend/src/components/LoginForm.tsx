@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 const LoginForm: React.FC = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -15,7 +15,7 @@ const LoginForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError("");
+    setError(null);
 
     try {
       const response = await login(formData.email, formData.password);
@@ -29,36 +29,46 @@ const LoginForm: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4"
+    >
+      {error && <p className="text-red-500 text-sm text-center">{error}</p>}
       <div>
-        <label className="block text-sm font-medium">Email</label>
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          Email
+        </label>
         <input
+          id="email"
           type="email"
           name="email"
           value={formData.email}
           onChange={handleChange}
-          className="w-full border p-2 rounded"
+          className="w-full border border-gray-300 p-2 rounded focus:ring-blue-500 focus:border-blue-500"
           required
         />
       </div>
       <div>
-        <label className="block text-sm font-medium">Password</label>
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          Password
+        </label>
         <input
+          id="password"
           type="password"
           name="password"
           value={formData.password}
           onChange={handleChange}
-          className="w-full border p-2 rounded"
+          className="w-full border border-gray-300 p-2 rounded focus:ring-blue-500 focus:border-blue-500"
           required
         />
       </div>
       <button
         type="submit"
         disabled={isLoading}
-        className={`w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 ${
-          isLoading ? "opacity-50 cursor-not-allowed" : ""
+        className={`w-full bg-blue-500 text-white p-3 rounded hover:bg-blue-600 ${
+          isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
         }`}
+        style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}
       >
         {isLoading ? "Logging in..." : "Log In"}
       </button>

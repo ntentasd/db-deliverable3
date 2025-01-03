@@ -14,11 +14,7 @@ const SignupForm: React.FC = () => {
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value.trimStart(),
-    }));
+    setFormData({ ...formData, [e.target.name]: e.target.value.trimStart() });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,11 +45,8 @@ const SignupForm: React.FC = () => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-6 max-w-lg mx-auto bg-white p-6 border rounded shadow"
+      className="space-y-4"
     >
-      <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
-        Sign Up
-      </h2>
       {error && <p className="text-red-500 text-sm text-center">{error}</p>}
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -114,9 +107,10 @@ const SignupForm: React.FC = () => {
       <button
         type="submit"
         disabled={isLoading}
-        className={`w-full bg-green-500 text-white p-3 rounded hover:bg-green-600 transition ${
-          isLoading ? "opacity-50 cursor-not-allowed" : ""
+        className={`w-full bg-green-500 text-white p-3 rounded hover:bg-green-600 ${
+          isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
         }`}
+        style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}
       >
         {isLoading ? "Signing up..." : "Sign Up"}
       </button>

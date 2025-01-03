@@ -1,4 +1,4 @@
-import { baseApi, Metadata } from "./api";
+import { authHeaders, baseApi, Metadata } from "./api";
 import { Car } from "./carsApi";
 
 export interface Service {
@@ -28,7 +28,7 @@ export const getServicesPaginated = async (license_plate: string, page: number, 
 
   try {
     const response = await api.get(`/cars/${license_plate}/services`, {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
       params: { page, page_size },
     });
     return response.data;

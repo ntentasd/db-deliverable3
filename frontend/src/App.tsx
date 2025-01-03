@@ -12,23 +12,29 @@ import TripDetails from "./components/TripDetails";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import Contact from "./pages/Contact";
-import { setupTokenExpirationHandler } from "./services/authUtils";
+import { isAdminJWT, setupTokenExpirationHandler } from "./services/authUtils";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import Rents from "./pages/Rents";
 import { RefreshProvider } from "./contexts/RefreshContext";
 
-const isAuthenticated = (): boolean => {
-  const token = localStorage.getItem("authToken");
-  return !!token;
-};
+const isAuthenticated = !!localStorage.getItem("authToken");
+
+const isAdmin = isAdminJWT();
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  if (!isAuthenticated()) {
+  if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
   }
   return children;
 };
+
+const AdminRoute = ({ children }: { children: JSX.Element }) => {
+  if (!isAdmin) {
+    return <Navigate to="/not-found" replace />;
+  }
+  return children;
+}
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -56,9 +62,6 @@ const App: React.FC = () => {
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/rent" element={<Rents />} />
-                <Route path="/cars" element={<Cars />} />
-                <Route path="/cars/:license_plate/edit" element={<EditCar />} />
-                <Route path="/cars/:license_plate" element={<CarDetailsWrapper />} />
 
                 {/* Protected Routes */}
                 <Route
@@ -86,8 +89,35 @@ const App: React.FC = () => {
                   }
                 />
 
+                {/* Admin Routes */}
+                <Route
+                  path="/cars"
+                  element={
+                    <AdminRoute>
+                      <Cars />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/cars/:license_plate/edit"
+                  element={
+                    <AdminRoute>
+                      <EditCar />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/cars/:license_plate"
+                  element={
+                    <AdminRoute>
+                      <CarDetailsWrapper />
+                    </AdminRoute>
+                  }
+                />
+
                 {/* Catch-all route */}
-                <Route path="*" element={<NotFound />} />
+                <Route path="/not-found" element={<NotFound />} />
+                <Route path="*" element={<Navigate to="/not-found" replace />} />
               </Routes>
             </div>
           </main>

@@ -1,4 +1,4 @@
-import { baseApi, Metadata } from "./api";
+import { authHeaders, baseApi, Metadata } from "./api";
 
 export interface Car {
   license_plate: string;
@@ -24,13 +24,14 @@ export const getAllCars = async () => {
 export const getAllCarsPaginated = async (page: number, page_size: number = 5): Promise<CarResponse> => {
   const response = await api.get(`/cars`, {
     params: { page, page_size },
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
   });
   return response.data;
 }
 
 export const getAvailableCars = async (page: number, page_size: number = 5): Promise<CarResponse> => {
   const response = await api.get(
-    `/cars/available`,
+    `/available`,
     { params: { page, page_size } },
   );
   return response.data;

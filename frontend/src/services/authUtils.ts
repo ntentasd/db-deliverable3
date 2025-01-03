@@ -1,6 +1,8 @@
 import { jwtDecode } from "jwt-decode";
 
-interface JwtPayload {
+export interface JwtPayload {
+  email: string;
+  role: string;
   exp: number;
 }
 
@@ -22,3 +24,17 @@ export const setupTokenExpirationHandler = (token: string, onExpire: () => void)
     onExpire();
   }
 };
+
+export const isAdminJWT = (): boolean => {
+  const token = localStorage.getItem("authToken");
+  if (token) {
+    try {
+      const decoded: JwtPayload & { role?: string } = jwtDecode(token);
+      return decoded.role === "Admin";
+    } catch (error: any) {
+      console.error("Failed to decode token:", error);
+      return false;
+    }
+  }
+  return false;
+}

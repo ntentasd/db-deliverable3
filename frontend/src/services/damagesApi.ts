@@ -1,4 +1,4 @@
-import { baseApi, Metadata } from "./api";
+import { authHeaders, baseApi, Metadata } from "./api";
 import { Car } from "./carsApi";
 
 export interface Damage {
@@ -21,15 +21,9 @@ export interface DamageResponse {
 const api = baseApi;
 
 export const getDamagesPaginated = async (license_plate: string, page: number, page_size: number = 3): Promise<DamageResponse> => {
-  // const response = await api.get(
-  //   `/cars/${license_plate}/damages`,
-  //   { headers: { 'Content-Type': 'application/json' }, params: { page, page_size } }
-  // );
-  // return response.data;
-
   try {
     const response = await api.get(`/cars/${license_plate}/damages`, {
-      headers: { "Content-Type": "application/json" },
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
       params: { page, page_size },
     });
     return response.data;

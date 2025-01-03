@@ -11,18 +11,27 @@ const Auth: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto mt-8 p-6 bg-white border rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-center">
+      <h2 className="text-2xl font-bold text-center py-4">
         {isSignup ? "Sign Up" : "Log In"}
       </h2>
-      <div className="text-center my-4">
-        <button
-          onClick={toggleForm}
-          className="text-blue-500 hover:underline"
-        >
-          {isSignup ? "Already have an account? Log In" : "Don't have an account? Sign Up"}
-        </button>
-      </div>
       {isSignup ? <SignupForm /> : <LoginForm />}
+      <div className="text-center mt-4">
+        {isSignup ? (
+          <p>
+            Already have an account?{" "}
+            <button onClick={toggleForm} className="text-blue-600 hover:underline">
+              Log In
+            </button>
+          </p>
+        ) : (
+          <p>
+            Don't have an account?{" "}
+            <button onClick={toggleForm} className="text-green-600 hover:underline">
+              Sign Up
+            </button>
+          </p>
+        )}
+      </div>
     </div>
   );
 };

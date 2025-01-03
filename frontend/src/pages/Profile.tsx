@@ -4,13 +4,28 @@ import { User } from "../services/usersApi";
 import { capitalizeFirstLetter, formatDateTime } from "../services/formatUtils";
 import ProfileInfo from "../components/ProfileInfo";
 import EditableField from "../components/EditableField";
+import { isAdminJWT } from "../services/authUtils";
 
 const Profile: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    if (isAdminJWT()) {
+      setIsAdmin(true);
+      setUser({
+        email: "admin@datadrive.com",
+        user_name: "Admin",
+        full_name: "Admin",
+        driving_behavior: 0,
+        created_at: new Date().toISOString(),
+      });
+      setLoading(false);
+      return;
+    }
+
     const getUserDetails = async () => {
       try {
         const userData = await fetchDetails();
@@ -57,7 +72,6 @@ const Profile: React.FC = () => {
       alert("Failed to delete your account. Please try again later.");
     }
   };
-  
 
   if (loading) {
     return (
@@ -78,33 +92,46 @@ const Profile: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto mt-8 p-6 bg-white border rounded-lg shadow-md">
       <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
-        User Profile
+        {isAdmin ? "Admin Profile" : "User Profile"}
       </h2>
       {user ? (
         <div className="space-y-6">
-          <EditableField
-            label="Username"
-            value={user.user_name || ""}
-            onSave={handleUpdateUsername}
-          />
-          <EditableField
-            label="Fullname"
-            value={user.full_name || ""}
-            onSave={handleUpdateFullname}
-          />
+          {isAdmin ? (
+            <>
+              <ProfileInfo label="Username" value={user.user_name} />
+              <ProfileInfo label="Fullname" value={user.full_name} />
+            </>
+          ) : (
+            <>
+              <EditableField
+                label="Username"
+                value={user.user_name || ""}
+                onSave={handleUpdateUsername}
+              />
+              <EditableField
+                label="Fullname"
+                value={user.full_name || ""}
+                onSave={handleUpdateFullname}
+              />
+            </>
+          )}
           <ProfileInfo label="Email" value={user.email || ""} />
-          <ProfileInfo
-            label="Joined"
-            value={formatDateTime(user.created_at) || ""}
-          />
-          <div className="text-center mt-6">
-            <button
-              onClick={handleDeleteAccount}
-              className="bg-red-600 text-white px-6 py-2 rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200 active:ring-offset-0"
-            >
-              Delete Account
-            </button>
-          </div>
+          {!isAdmin && (
+            <>
+            <ProfileInfo
+              label="Joined"
+              value={formatDateTime(user.created_at) || ""}
+            />
+            <div className="text-center mt-6">
+              <button
+                onClick={handleDeleteAccount}
+                className="bg-red-600 text-white px-6 py-2 rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200 active:ring-offset-0"
+              >
+                Delete Account
+              </button>
+            </div>
+            </>
+          )}
         </div>
       ) : (
         <p>No user data available.</p>

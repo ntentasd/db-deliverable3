@@ -1,9 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { isAdminJWT } from '../services/authUtils';
 
 const Navbar = () => {
   const navigate = useNavigate();
 
   const isAuthenticated = !!localStorage.getItem("authToken");
+
+  const isAdmin = !!isAdminJWT();
 
   const handleLogout = () => {
     localStorage.removeItem("authToken");
@@ -16,22 +19,68 @@ const Navbar = () => {
           <Link to="/">🚗 DataDrive</Link>
         </h1>
         <ul className="flex space-x-6">
-          <li>
-            <Link to="/rent" className="hover:text-gray-400">
-              Rent
-            </Link>
-          </li>
-          <li>
-            <Link to="/trips" className="hover:text-gray-400">
-              Trips
-            </Link>
-          </li>
-          {isAuthenticated ? (
+          {isAdmin ? (
+            <>
+            <li>
+              <Link to="/cars" className="hover:text-gray-400">
+                Cars
+              </Link>
+            </li>
             <li>
               <Link to="/profile" className="hover:text-gray-400">
                 Profile
               </Link>
             </li>
+            <button
+                onClick={handleLogout}
+                className="hover:text-gray-400 focus:outline-none"
+              >
+                Logout
+              </button>
+            </>
+          ) : isAuthenticated ? (
+            <>
+            <li>
+              <Link to="/rent" className="hover:text-gray-400">
+                Rent
+              </Link>
+            </li>
+            <li>
+              <Link to="/trips" className="hover:text-gray-400">
+                Trips
+              </Link>
+            </li>
+            <li>
+              <Link to="/profile" className="hover:text-gray-400">
+                Profile
+              </Link>
+            </li>
+            <li>
+              <button
+                onClick={handleLogout}
+                className="hover:text-gray-400 focus:outline-none"
+              >
+                Logout
+              </button>
+            </li>
+            </>
+          ) : (
+            <>
+            <li>
+              <Link to="/rent" className="hover:text-gray-400">
+                Rent
+              </Link>
+            </li>
+            <li>
+              <Link to="/auth" className="hover:text-gray-400 focus:outline-none">
+                Login
+              </Link>
+            </li>
+            </>
+          )}
+
+          {/* {isAuthenticated ? (
+
           ) : (
             <></>
           )}
@@ -48,7 +97,7 @@ const Navbar = () => {
                 Login
               </Link>
             )}
-          </li>
+          </li> */}
         </ul>
       </div>
     </nav>

@@ -13,9 +13,12 @@ const Rent: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [hasActiveTrip, setHasActiveTrip] = useState(false);
 
+  const isAuthenticated = !!localStorage.getItem("authToken");
+
   const fetchCars = async (page: number) => {
     setLoading(true);
     setError(null);
+
     try {
       const data = await getAvailableCars(page, 5);
       setCars(data.data || []);
@@ -42,6 +45,10 @@ const Rent: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      fetchCars(currentPage);
+      return;
+    }
     if (!hasActiveTrip) {
       fetchCars(currentPage);
     }
@@ -142,7 +149,12 @@ const Rent: React.FC = () => {
           </div>
         </>
       )}
-      <ActiveTripPopup onRefresh={handleTripEnd} />
+      {/* <ActiveTripPopup onRefresh={handleTripEnd} /> */}
+      {isAuthenticated ? (
+        <ActiveTripPopup onRefresh={handleTripEnd} />
+      ) : (
+        <></>
+      )}
     </div>
   );
 };
