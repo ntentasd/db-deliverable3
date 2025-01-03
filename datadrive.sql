@@ -115,7 +115,7 @@ CREATE TABLE `Payments` (
   `amount` decimal(10,2) NOT NULL,
   `payment_method` enum('SUBSCRIPTION','CARD','CRYPTO') NOT NULL,
   PRIMARY KEY (`trip_id`),
-  CONSTRAINT `Payments_ibfk_1` FOREIGN KEY (`trip_id`) REFERENCES `Trips` (`id`)
+  CONSTRAINT `Payments_ibfk_1` FOREIGN KEY (`trip_id`) REFERENCES `Trips` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -142,7 +142,7 @@ CREATE TABLE `Reviews` (
   `comment` tinytext,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`trip_id`),
-  CONSTRAINT `Reviews_ibfk_1` FOREIGN KEY (`trip_id`) REFERENCES `Trips` (`id`)
+  CONSTRAINT `Reviews_ibfk_1` FOREIGN KEY (`trip_id`) REFERENCES `Trips` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -254,7 +254,7 @@ CREATE TABLE `Trips` (
   PRIMARY KEY (`id`),
   KEY `user_email` (`user_email`),
   KEY `car_license_plate` (`car_license_plate`),
-  CONSTRAINT `Trips_ibfk_1` FOREIGN KEY (`user_email`) REFERENCES `Users` (`email`),
+  CONSTRAINT `Trips_ibfk_1` FOREIGN KEY (`user_email`) REFERENCES `Users` (`email`) ON DELETE CASCADE,
   CONSTRAINT `Trips_ibfk_2` FOREIGN KEY (`car_license_plate`) REFERENCES `Cars` (`license_plate`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -361,7 +361,7 @@ CREATE TABLE `UserSettings` (
   `engine_start_stop` bit(1) DEFAULT NULL,
   `cruise_control` bit(1) DEFAULT NULL,
   PRIMARY KEY (`user_email`),
-  CONSTRAINT `UserSettings_ibfk_1` FOREIGN KEY (`user_email`) REFERENCES `Users` (`email`)
+  CONSTRAINT `UserSettings_ibfk_1` FOREIGN KEY (`user_email`) REFERENCES `Users` (`email`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -392,7 +392,7 @@ CREATE TABLE `UserSubscriptions` (
   PRIMARY KEY (`id`),
   KEY `user_email` (`user_email`),
   KEY `subscription_name` (`subscription_name`),
-  CONSTRAINT `UserSubscriptions_ibfk_1` FOREIGN KEY (`user_email`) REFERENCES `Users` (`email`),
+  CONSTRAINT `UserSubscriptions_ibfk_1` FOREIGN KEY (`user_email`) REFERENCES `Users` (`email`) ON DELETE CASCADE,
   CONSTRAINT `UserSubscriptions_ibfk_2` FOREIGN KEY (`subscription_name`) REFERENCES `Subscriptions` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
