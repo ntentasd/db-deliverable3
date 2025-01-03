@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -21,7 +20,7 @@ func JWTMiddleware(secretKey string) fiber.Handler {
 		// Extract token from Authorization header
 		authHeader := c.Get("Authorization")
 		if !strings.HasPrefix(authHeader, "Bearer ") {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Missing or invalid Authorization header"})
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "missing or invalid Authorization header"})
 		}
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
@@ -35,20 +34,19 @@ func JWTMiddleware(secretKey string) fiber.Handler {
 		})
 
 		if err != nil || !token.Valid {
-			log.Printf("JWT validation error: %v", err) // Log for debugging
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token"})
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "invalid token"})
 		}
 
 		// Extract claims
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid claims"})
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "invalid claims"})
 		}
 
 		// Extract email and username
 		email, emailOk := claims["email"].(string)
 		if !emailOk {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid claims structure"})
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "invalid claims structure"})
 		}
 
 		// Attach to context
