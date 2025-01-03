@@ -17,7 +17,8 @@ type UserDB struct {
 var (
 	ErrUserNotFound       = fmt.Errorf("user not found")
 	ErrInvalidCredentials = fmt.Errorf("invalid credentials")
-	ErrDuplicateEntry     = fmt.Errorf("a user with this email address/username already exists")
+	ErrDuplicateEmail     = fmt.Errorf("a user with this email address already exists")
+	ErrDuplicateUsername  = fmt.Errorf("a user with this username already exists")
 )
 
 func NewUserDatabase(db *sql.DB) *UserDB {
@@ -112,6 +113,26 @@ func (db *UserDB) UpdateFullname(email, full_name string) error {
 func (db *UserDB) CreateUser(email, username, full_name, password string) (models.User, error) {
 	var user models.User
 
+	// Check if email is already taken
+	emailCheckQuery := `SELECT email FROM Users WHERE email = ?`
+	err := db.DB.QueryRow(emailCheckQuery, email).Scan(&user.Email)
+	if err != nil {
+		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
+			return models.User{}, ErrDuplicateEmail
+		}
+		return models.User{}, err
+	}
+
+	// Check if username is already taken
+	usernameCheckQuery := `SELECT username FROM Users WHERE username = ?`
+	err = db.DB.QueryRow(usernameCheckQuery, username).Scan(&user.UserName)
+	if err != nil {
+		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
+			return models.User{}, ErrDuplicateUsername
+		}
+		return models.User{}, err
+	}
+
 	query := `
 		INSERT INTO
 		Users (email, username, full_name, password, driving_behavior, created_at)
@@ -121,15 +142,19 @@ func (db *UserDB) CreateUser(email, username, full_name, password string) (model
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, err := db.DB.ExecContext(ctx, query, email, username, full_name, password)
+	_, err = db.DB.ExecContext(ctx, query, email, username, full_name, password)
 	if err != nil {
 		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
-			return models.User{}, ErrDuplicateEntry
+			return models.User{}, ErrDuplicateEmail
 		}
 		return models.User{}, err
 	}
 
-	return user, nil
+	return models.User{
+		Email:    email,
+		UserName: username,
+		FullName: full_name,
+	}, nil
 }
 
 func (db *UserDB) DeleteUser(email string) error {
