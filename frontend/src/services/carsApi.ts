@@ -53,10 +53,10 @@ export const addCar = async (car: {
   location: string;
 }) => {
   try {
-    const response = await api.post('/cars', car, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    const response = await api.post(
+      '/cars',
+      car, 
+      { headers: { ...authHeaders(), 'Content-Type': 'application/json' },
     });
     return response.data;
   } catch (error) {
@@ -69,7 +69,11 @@ export const updateCarStatus = async (
   licensePlate: string,
   status: "AVAILABLE" | "RENTED" | "MAINTENANCE"
 ) => {
-  const response = await api.put(`/cars/${licensePlate}/status`, { status });
+  const response = await api.put(
+    `/cars/${licensePlate}/status`,
+    { status },
+    { headers: { ...authHeaders(), 'Content-Type': 'application/json' } },
+  );
   return response.data;
 };
 
@@ -82,16 +86,26 @@ export const updateCar = async (car: Car) => {
     location: car.location,
   };
 
-  const response = await api.put(`/cars/${car.license_plate}`, inputCar);
+  const response = await api.put(
+    `/cars/${car.license_plate}`,
+    inputCar,
+    { headers: { ...authHeaders(), 'Content-Type': 'application/json' } },
+  );
   return response.data;
 };
 
 export const deleteCar = async (licensePlate: string) => {
-  const response = await api.delete(`/cars/${licensePlate}`);
+  const response = await api.delete(
+    `/cars/${licensePlate}`,
+    { headers: { ...authHeaders(), 'Content-Type': 'application/json' } },
+  );
   return response.data;
 };
 
 export const getCarDetails = async (licensePlate: string) => {
-  const response = await api.get(`/cars/${licensePlate}/details`);
+  const response = await api.get(
+    `/cars/${licensePlate}/details`,
+    { headers: { ...authHeaders(), 'Content-Type': 'application/json' } },
+  );
   return response.data;
 };
