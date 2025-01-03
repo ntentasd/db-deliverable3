@@ -3,6 +3,8 @@ import { getAvailableCars, Car } from "../services/carsApi";
 import { startTrip, getActiveTrip } from "../services/tripsApi";
 import ActiveTripPopup from "../components/ActiveTripPopup";
 import { useRefresh } from "../contexts/RefreshContext";
+import { isAdminJWT } from "../services/authUtils";
+import { Helmet } from "react-helmet";
 
 const Rent: React.FC = () => {
   const { triggerRefresh } = useRefresh();
@@ -14,6 +16,8 @@ const Rent: React.FC = () => {
   const [hasActiveTrip, setHasActiveTrip] = useState(false);
 
   const isAuthenticated = !!localStorage.getItem("authToken");
+
+  const isAdmin = !!isAdminJWT();
 
   const fetchCars = async (page: number) => {
     setLoading(true);
@@ -85,6 +89,9 @@ const Rent: React.FC = () => {
 
   return (
     <div className="mt-6 max-w-6xl mx-auto p-4">
+      <Helmet>
+        <title>DataDrive - Rents</title>
+      </Helmet>
       <h2 className="text-2xl font-bold mb-6 text-center">Available Cars</h2>
       {error && <p className="text-red-500 text-center mb-4">{error}</p>}
       {hasActiveTrip ? (
@@ -113,7 +120,13 @@ const Rent: React.FC = () => {
                 </p>
                 <button
                   onClick={() => handleRent(car.license_plate)}
-                  className="w-full mt-4 p-2 rounded bg-blue-500 text-white hover:bg-blue-600"
+                  disabled={isAdmin}
+                  title={isAdmin ? "You cannot rent as admin" : "Rent this car"}
+                  className={`w-full mt-4 p-2 rounded ${
+                    isAdmin
+                      ? "bg-gray-400 text-gray-800 cursor-not-allowed"
+                      : "bg-blue-500 text-white hover:bg-blue-600"
+                  }`}
                 >
                   Rent
                 </button>

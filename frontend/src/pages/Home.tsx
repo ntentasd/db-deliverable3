@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { isAdminJWT } from "../services/authUtils";
+import { Helmet } from "react-helmet";
 
 const Home: React.FC = () => {
   const isAuthenticated = !!localStorage.getItem("authToken");
@@ -8,6 +9,9 @@ const Home: React.FC = () => {
 
   return (
     <div className="bg-gray-100 min-h-screen">
+      <Helmet>
+        <title>DataDrive - Home</title>
+      </Helmet>
       <div className="container mx-auto px-6 py-12 text-center">
         <h1 className="text-5xl font-bold text-blue-600 mb-6">
           Welcome to DataDrive

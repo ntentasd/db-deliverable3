@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { getServicesPaginated } from "../services/servicesApi";
 import { getDamagesPaginated } from "../services/damagesApi";
+import { Helmet } from "react-helmet";
 
 const CarDetailsWrapper: React.FC = () => {
   const { license_plate } = useParams<{ license_plate: string }>();
@@ -97,6 +98,9 @@ const CarDetailsWrapper: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4">
+      <Helmet>
+        <title>DataDrive - {license_plate}'s Details</title>
+      </Helmet>
       <h2 className="text-2xl font-bold mb-4">Car Details - {license_plate}</h2>
 
       <h3 className="text-xl font-semibold mt-6">Services</h3>

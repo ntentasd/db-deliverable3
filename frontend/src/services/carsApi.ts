@@ -38,7 +38,10 @@ export const getAvailableCars = async (page: number, page_size: number = 5): Pro
 }
 
 export const getCarByLicensePlate = async (licensePlate: string) => {
-  const response = await api.get(`/cars/${licensePlate}`);
+  const response = await api.get(
+    `/cars/${licensePlate}`,
+    { headers: { ...authHeaders(), 'Content-Type': 'application/json' } },
+  );
   return response.data;
 }
 

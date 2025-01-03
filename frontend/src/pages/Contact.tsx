@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Helmet } from "react-helmet";
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -19,6 +20,9 @@ const Contact: React.FC = () => {
 
   return (
     <div className="max-w-3xl mx-auto mt-8 p-4">
+      <Helmet>
+        <title>DataDrive - Contact Us</title>
+      </Helmet>
       <h1 className="text-3xl font-bold mb-4">Contact Us</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

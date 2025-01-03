@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCarByLicensePlate, updateCar } from "../services/carsApi";
+import { Helmet } from "react-helmet";
 
 interface Car {
   license_plate: string;
@@ -62,6 +63,9 @@ const EditCar: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto mt-8 p-4 border rounded-lg shadow-lg bg-white">
+      <Helmet>
+        <title>DataDrive - Edit {car.license_plate}</title>
+      </Helmet>
       <h2 className="text-xl font-bold mb-4">Edit Car</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

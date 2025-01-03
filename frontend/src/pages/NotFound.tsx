@@ -1,9 +1,13 @@
 import React from "react";
+import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
 
 const NotFound: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+      <Helmet>
+        <title>DataDrive - Not Found</title>
+      </Helmet>
       <h1 className="text-6xl font-bold text-blue-600">404</h1>
       <h2 className="text-2xl font-semibold text-gray-800 mt-4">
         Oops! Page Not Found

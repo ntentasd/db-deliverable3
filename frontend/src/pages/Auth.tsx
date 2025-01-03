@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import LoginForm from "../components/LoginForm";
 import SignupForm from "../components/SignupForm";
+import { Helmet } from "react-helmet";
 
 const Auth: React.FC = () => {
   const [isSignup, setIsSignup] = useState(false);
@@ -11,6 +12,9 @@ const Auth: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto mt-8 p-6 bg-white border rounded-lg shadow-md">
+      <Helmet>
+        <title>DataDrive - {isSignup ? "Sign Up" : "Log In"}</title>
+      </Helmet>
       <h2 className="text-2xl font-bold text-center py-4">
         {isSignup ? "Sign Up" : "Log In"}
       </h2>

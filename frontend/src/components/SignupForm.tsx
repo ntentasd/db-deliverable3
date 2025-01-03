@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { signup } from "../services/usersApi";
 import { useNavigate } from "react-router-dom";
+import { capitalizeFirstLetter } from "../services/formatUtils";
 
 const SignupForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -47,7 +48,7 @@ const SignupForm: React.FC = () => {
       onSubmit={handleSubmit}
       className="space-y-4"
     >
-      {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+      {error && <p className="text-red-500 text-sm text-center">{capitalizeFirstLetter(error)}</p>}
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
           Email

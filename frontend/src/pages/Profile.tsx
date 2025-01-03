@@ -5,6 +5,7 @@ import { capitalizeFirstLetter, formatDateTime } from "../services/formatUtils";
 import ProfileInfo from "../components/ProfileInfo";
 import EditableField from "../components/EditableField";
 import { isAdminJWT } from "../services/authUtils";
+import { Helmet } from "react-helmet";
 
 const Profile: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -89,8 +90,13 @@ const Profile: React.FC = () => {
     );
   }
 
+  const username = user?.user_name || "";
+
   return (
     <div className="max-w-4xl mx-auto mt-8 p-6 bg-white border rounded-lg shadow-md">
+      <Helmet>
+        <title>DataDrive - {capitalizeFirstLetter(username)}'s Profile</title>
+      </Helmet>
       <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
         {isAdmin ? "Admin Profile" : "User Profile"}
       </h2>

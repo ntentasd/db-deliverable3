@@ -1,8 +1,12 @@
 import React from "react";
+import { Helmet } from "react-helmet";
 
 const Terms: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto mt-8 p-4">
+      <Helmet>
+        <title>DataDrive - Terms</title>
+      </Helmet>
       <h1 className="text-3xl font-bold mb-4">Terms of Service</h1>
       <p className="mb-4">
         These Terms of Service govern your use of the DataDrive website and

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { login } from "../services/usersApi";
 import { useNavigate } from "react-router-dom";
+import { capitalizeFirstLetter } from "../services/formatUtils";
 
 const LoginForm: React.FC = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -19,9 +20,21 @@ const LoginForm: React.FC = () => {
 
     try {
       const response = await login(formData.email, formData.password);
-      localStorage.setItem("authToken", response.token);
-      navigate("/profile");
+      console.log("Login response:", response);
+
+      if (response.token) {
+        localStorage.setItem("authToken", response.token);
+
+        // Delay navigation to ensure token is set
+        setTimeout(() => {
+          navigate("/profile");
+        }, 100);
+      } else {
+        console.error("No token received from login response.");
+        setError("Login failed. Please try again.");
+      }
     } catch (err: any) {
+      console.error("Login error:", err);
       setError(err.response?.data?.error || "An unexpected error occurred.");
     } finally {
       setIsLoading(false);
@@ -33,7 +46,7 @@ const LoginForm: React.FC = () => {
       onSubmit={handleSubmit}
       className="space-y-4"
     >
-      {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+      {error && <p className="text-red-500 text-sm text-center">{capitalizeFirstLetter(error)}</p>}
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
           Email
