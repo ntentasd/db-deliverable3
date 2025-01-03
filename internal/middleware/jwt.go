@@ -12,7 +12,8 @@ import (
 type ContextKey string
 
 const (
-	UserEmailKey ContextKey = "email"
+	Email ContextKey = "email"
+	Role  ContextKey = "role"
 )
 
 func JWTMiddleware(secretKey string) fiber.Handler {
@@ -43,14 +44,21 @@ func JWTMiddleware(secretKey string) fiber.Handler {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "invalid claims"})
 		}
 
-		// Extract email and username
-		email, emailOk := claims["email"].(string)
-		if !emailOk {
+		// Extract email
+		email, ok := claims["email"].(string)
+		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "invalid claims structure"})
+		}
+
+		// Extract role
+		role, ok := claims["role"].(string)
+		if !ok {
+			role = "Client"
 		}
 
 		// Attach to context
 		c.Locals("email", email)
+		c.Locals("role", role)
 
 		return c.Next()
 	}
