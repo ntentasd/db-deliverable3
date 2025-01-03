@@ -1,32 +1,39 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getTrips, stopTrip } from "../services/tripsApi";
+import { getActiveTrip, stopTrip } from "../services/tripsApi";
+import { useRefresh } from "../contexts/RefreshContext";
 
 interface ActiveTripPopupProps {
-  onRefresh: () => void; // Trigger a refresh from the popup
-  refreshKey: number; // Listen for changes to refreshKey
+  onRefresh: () => void;
 }
 
-const ActiveTripPopup: React.FC<ActiveTripPopupProps> = ({ onRefresh, refreshKey }) => {
+const ActiveTripPopup: React.FC<ActiveTripPopupProps> = ({ onRefresh }) => {
   const [activeTrip, setActiveTrip] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { triggerRefresh } = useRefresh();
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchActiveTrip = async () => {
       try {
-        const response = await getTrips();
-        const ongoingTrip = response.data.find(
-          (trip: any) => trip.end_time === null || trip.end_time === undefined
-        );
-        setActiveTrip(ongoingTrip || null);
+        const response = await getActiveTrip();
+        setActiveTrip(response || null);
+        setError(null);
       } catch (err: any) {
-        setError(err.message);
+        const errorMessage =
+          err.response?.data?.error || err.message || "Unknown error";
+
+        if (errorMessage === "no active trip found") {
+          setActiveTrip(null);
+          setError(null);
+        } else {
+          setError(errorMessage);
+        }
       }
     };
 
     fetchActiveTrip();
-  }, [refreshKey]);
+  }, [triggerRefresh]);
 
   const handleStopTrip = async () => {
     try {
@@ -34,13 +41,9 @@ const ActiveTripPopup: React.FC<ActiveTripPopupProps> = ({ onRefresh, refreshKey
       alert("Trip stopped successfully!");
       setActiveTrip(null);
       onRefresh();
+      triggerRefresh();
     } catch (err: any) {
-      console.error("Failed to stop trip:", err);
-      alert(
-        `Failed to stop trip: ${
-          err.response?.data?.error || err.message || "Unknown error"
-        }`
-      );
+      alert(`Failed to stop trip: ${err.response?.data?.error || "Unknown error"}`);
     }
   };
 
@@ -52,22 +55,16 @@ const ActiveTripPopup: React.FC<ActiveTripPopupProps> = ({ onRefresh, refreshKey
     }
   };
 
-  if (!activeTrip) return null;
+  if (!activeTrip && !error) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded shadow-lg space-y-2">
-      {error && <div className="text-red-500">{error}</div>}
+      {error && <p className="text-red-500">{error}</p>}
       <h3 className="text-lg font-bold">Active Trip</h3>
-      <p>
-        <strong>Car:</strong> {activeTrip.car_license_plate}
-      </p>
-      <p>
-        <strong>User:</strong> {activeTrip.user_email}
-      </p>
-      <p>
-        <strong>Start:</strong>{" "}
-        {new Date(activeTrip.start_time).toLocaleString()}
-      </p>
+      <p><strong>Car:</strong> {activeTrip?.car_license_plate || "N/A"}</p>
+      <p><strong>Start:</strong> {new Date(activeTrip?.start_time).toLocaleString()}</p>
       <div className="flex space-x-2 mt-4">
         <button
           onClick={handleStopTrip}

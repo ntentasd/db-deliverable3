@@ -27,7 +27,6 @@ const EditCar: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Fetch car data on mount
   useEffect(() => {
     const fetchCar = async () => {
       try {
@@ -43,13 +42,11 @@ const EditCar: React.FC = () => {
     fetchCar();
   }, [license_plate]);
 
-  // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setCar({ ...car, [name]: name === "cost_per_km" ? parseFloat(value) : value });
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {

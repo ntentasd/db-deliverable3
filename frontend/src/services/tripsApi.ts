@@ -1,6 +1,6 @@
-import { baseApi } from './api';
+import { authHeaders, baseApi, Metadata } from './api';
 
-interface Trip {
+export interface Trip {
   id: number;
   user_email: string;
   car_license_plate: string;
@@ -12,34 +12,25 @@ interface Trip {
 
 interface TripResponse {
   data: Trip[];
-  meta: {
-    current_page: number;
-    page_size: number;
-    total_pages: number;
-    total_trips: number;
-  };
+  meta: Metadata;
 }
 
 const api = baseApi;
 
-const getAuthToken = (): string | null => {
-  return localStorage.getItem('authToken');
-};
-
-const authHeaders = (): Record<string, string> => {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error('Authorization token is missing');
-  }
-  return { Authorization: `Bearer ${token}` };
-};
-
-export const getTrips = async (): Promise<TripResponse> => {
+export const getTrips = async (): Promise<Trip[]> => {
   const response = await api.get(`/trips`, { headers: authHeaders() });
   return response.data;
 };
 
-export const getTripsPaginated = async (page: number, page_size: number = 10) => {
+export const getActiveTrip = async (): Promise<Trip> => {
+  const response = await api.get(
+    `/trips/active`,
+    { headers: { ...authHeaders(), 'Content-Type': 'application/json' } }
+  );
+  return response.data;
+}
+
+export const getTripsPaginated = async (page: number, page_size: number = 5): Promise<TripResponse> => {
   const response = await api.get(`/trips`, {
     params: { page, page_size },
     headers: authHeaders(),
@@ -47,10 +38,10 @@ export const getTripsPaginated = async (page: number, page_size: number = 10) =>
   return response.data;
 };
 
-export const startTrip = async (licensePlate: string): Promise<any> => {
+export const startTrip = async (license_plate: string): Promise<any> => {
   const response = await api.post(
     `/trips/start`,
-    { license_plate: licensePlate },
+    { license_plate: license_plate },
     { headers: { ...authHeaders(), 'Content-Type': 'application/json' } }
   );
   return response.data;
@@ -66,15 +57,15 @@ export const stopTrip = async (): Promise<any> => {
   return response.data;
 };
 
-export const getTripById = async (tripId: string): Promise<any> => {
+export const getTripById = async (trip_id: string): Promise<any> => {
   const response = await api.get(
-    `/trips/details/${tripId}`,
+    `/trips/details/${trip_id}`,
     { headers: { ...authHeaders(), 'Content-Type': 'application/json' } }
   );
   return response.data;
 };
 
-export const updateTrip = async (tripId: string, trip: any): Promise<any> => {
-  const response = await api.put(`/trips/${tripId}`, trip, { headers: authHeaders() });
+export const updateTrip = async (trip_id: string, trip: any): Promise<any> => {
+  const response = await api.put(`/trips/${trip_id}`, trip, { headers: authHeaders() });
   return response.data;
 };

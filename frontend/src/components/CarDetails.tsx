@@ -1,26 +1,7 @@
 import React from "react";
-
-interface Damage {
-  description: string;
-  reported_date: string;
-  repair_cost: number;
-  repaired: boolean;
-}
-
-interface Service {
-  description: string;
-  service_date: string;
-  service_cost: number;
-}
-
-interface Car {
-  license_plate: string;
-  make: string;
-  model: string;
-  status: string;
-  cost_per_km: number;
-  location: string;
-}
+import { Damage } from "../services/damagesApi";
+import { Service } from "../services/servicesApi";
+import { Car } from "../services/carsApi";
 
 interface CarDetailsProps {
   car: Car;

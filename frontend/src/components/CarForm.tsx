@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { addCar } from "../services/carsApi";
 
 interface CarFormProps {
-  onInsert: () => void; // Add this prop to refresh the car list
+  onInsert?: () => void;
 }
 
 const CarForm: React.FC<CarFormProps> = ({ onInsert }) => {
@@ -29,15 +29,14 @@ const CarForm: React.FC<CarFormProps> = ({ onInsert }) => {
         model: formData.model,
         status: formData.status,
         cost_per_km: parseFloat(
-          formData.costPerKm.replace(",", ".") // Handle both comma and dot for decimals
+          formData.costPerKm.replace(",", ".")
         ),
         location: formData.location,
       };
 
-      await addCar(newCar); // Call the API to add the car
+      await addCar(newCar);
       alert("Car added successfully!");
 
-      // Clear the form
       setFormData({
         license_plate: "",
         make: "",
@@ -47,7 +46,9 @@ const CarForm: React.FC<CarFormProps> = ({ onInsert }) => {
         location: "",
       });
 
-      onInsert(); // Refresh the car list
+      if (onInsert) {
+        onInsert();
+      }
     } catch (error) {
       console.error("Failed to add car:", error);
       alert("Failed to add car.");

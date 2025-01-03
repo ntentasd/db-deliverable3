@@ -1,21 +1,19 @@
-import React, { useState } from "react";
-import TripForm from "../components/TripForm";
+import React, { useEffect } from "react";
 import TripList from "../components/TripList";
 import ActiveTripPopup from "../components/ActiveTripPopup";
+import { useRefresh } from "../contexts/RefreshContext";
 
 const Trips: React.FC = () => {
-  const [refreshKey, setRefreshKey] = useState(0);
+  const { refreshKey, triggerRefresh } = useRefresh();
 
-  const handleRefresh = () => {
-    setRefreshKey((prevKey) => prevKey + 1); // Increment the refresh key
-  };
+  useEffect(() => {
+  }, [refreshKey]);
 
   return (
     <div className="container mx-auto p-4">
       <div className="bg-white shadow-md rounded-lg p-6">
-        <TripForm onRefresh={handleRefresh} />
         <TripList key={refreshKey} />
-        <ActiveTripPopup onRefresh={handleRefresh} refreshKey={refreshKey} />
+        <ActiveTripPopup onRefresh={triggerRefresh} />
       </div>
     </div>
   );

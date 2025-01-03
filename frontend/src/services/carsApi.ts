@@ -1,6 +1,6 @@
-import { baseApi } from "./api";
+import { baseApi, Metadata } from "./api";
 
-interface Car {
+export interface Car {
   license_plate: string;
   make: string;
   model: string;
@@ -9,12 +9,32 @@ interface Car {
   location: string;
 }
 
+interface CarResponse {
+  data: Car[];
+  meta: Metadata;
+}
+
 const api = baseApi;
 
 export const getAllCars = async () => {
   const response = await api.get("/cars");
   return response.data;
 };
+
+export const getAllCarsPaginated = async (page: number, page_size: number = 5): Promise<CarResponse> => {
+  const response = await api.get(`/cars`, {
+    params: { page, page_size },
+  });
+  return response.data;
+}
+
+export const getAvailableCars = async (page: number, page_size: number = 5): Promise<CarResponse> => {
+  const response = await api.get(
+    `/cars/available`,
+    { params: { page, page_size } },
+  );
+  return response.data;
+}
 
 export const getCarByLicensePlate = async (licensePlate: string) => {
   const response = await api.get(`/cars/${licensePlate}`);
