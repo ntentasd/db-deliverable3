@@ -1,7 +1,12 @@
 package server
 
-import "github.com/ntentasd/db-deliverable3/internal/database"
+import (
+	"github.com/gofiber/fiber/v2"
+	"github.com/ntentasd/db-deliverable3/internal/database"
+)
 
 type Server struct {
-	Database *database.Database
+	FiberApp  *fiber.App
+	Database  *database.Database
+	JWTSecret string
 }

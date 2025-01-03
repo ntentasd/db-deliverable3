@@ -10,8 +10,8 @@ import (
 	"github.com/ntentasd/db-deliverable3/internal/models"
 )
 
-func (srv *Server) SetupCarRoutes(app *fiber.App) {
-	carGroup := app.Group("/cars")
+func (srv *Server) SetupCarRoutes() {
+	carGroup := srv.FiberApp.Group("/cars")
 
 	validate := validator.New()
 
@@ -19,11 +19,69 @@ func (srv *Server) SetupCarRoutes(app *fiber.App) {
 
 	// Get all cars
 	carGroup.Get("/", func(c *fiber.Ctx) error {
-		cars, err := srv.Database.CarDB.GetAllCars()
+		page := c.QueryInt("page", 1)
+		if page < 1 {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageNumber.Error()})
+		}
+
+		pageSize := c.QueryInt("page_size", 5)
+		if pageSize < 1 || pageSize > 100 {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
+		}
+
+		totalCars, err := srv.Database.CarDB.GetTotalCarCount()
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to fetch total cars count"})
+		}
+
+		totalPages := (totalCars + pageSize - 1) / pageSize
+
+		cars, err := srv.Database.CarDB.GetAllCars(page, pageSize)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
-		return c.JSON(cars)
+		return c.JSON(fiber.Map{
+			"data": cars,
+			"meta": fiber.Map{
+				"current_page": page,
+				"page_size":    pageSize,
+				"total_pages":  totalPages,
+				"total_cars":   totalCars,
+			},
+		})
+	})
+
+	carGroup.Get("/available", func(c *fiber.Ctx) error {
+		page := c.QueryInt("page", 1)
+		if page < 1 {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageNumber.Error()})
+		}
+
+		pageSize := c.QueryInt("page_size", 5)
+		if pageSize < 1 || pageSize > 100 {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
+		}
+
+		totalCars, err := srv.Database.CarDB.GetTotalAvailableCarCount()
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to fetch total cars count"})
+		}
+
+		totalPages := (totalCars + pageSize - 1) / pageSize
+
+		cars, err := srv.Database.CarDB.GetAllAvailableCars(page, pageSize)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(fiber.Map{
+			"data": cars,
+			"meta": fiber.Map{
+				"current_page": page,
+				"page_size":    pageSize,
+				"total_pages":  totalPages,
+				"total_cars":   totalCars,
+			},
+		})
 	})
 
 	// Get car by license plate
@@ -104,10 +162,20 @@ func (srv *Server) SetupCarRoutes(app *fiber.App) {
 		return c.Status(http.StatusOK).JSON(car)
 	})
 
-	carGroup.Get("/:license_plate/details", func(c *fiber.Ctx) error {
+	carGroup.Get("/:license_plate/damages", func(c *fiber.Ctx) error {
 		licensePlate := c.Params("license_plate")
 		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
+		}
+
+		page := c.QueryInt("page", 1)
+		if page < 1 {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageNumber.Error()})
+		}
+
+		pageSize := c.QueryInt("page_size", 5)
+		if pageSize < 1 || pageSize > 100 {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
 		}
 
 		// Fetch car details
@@ -116,22 +184,79 @@ func (srv *Server) SetupCarRoutes(app *fiber.App) {
 			return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Car not found"})
 		}
 
-		// Fetch damages
-		damages, err := srv.Database.DamageDB.GetDamagesByLicensePlate(licensePlate)
+		totalDamages, err := srv.Database.DamageDB.GetTotalDamages(car.LicensePlate)
 		if err != nil {
-			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to fetch total damages count"})
 		}
 
-		// Fetch services
-		services, err := srv.Database.ServiceDB.GetServicesByLicensePlate(licensePlate)
+		totalPages := (totalDamages + pageSize - 1) / pageSize
+
+		// Fetch damages
+		damages, err := srv.Database.DamageDB.GetDamages(licensePlate, page, pageSize)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
 		return c.JSON(fiber.Map{
-			"car":      car,
-			"damages":  damages,
-			"services": services,
+			"data": fiber.Map{
+				"car":     car,
+				"damages": damages,
+			},
+			"meta": fiber.Map{
+				"current_page":  page,
+				"page_size":     pageSize,
+				"total_pages":   totalPages,
+				"total_damages": totalDamages,
+			},
+		})
+	})
+
+	carGroup.Get("/:license_plate/services", func(c *fiber.Ctx) error {
+		licensePlate := c.Params("license_plate")
+		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
+		}
+
+		page := c.QueryInt("page", 1)
+		if page < 1 {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageNumber.Error()})
+		}
+
+		pageSize := c.QueryInt("page_size", 5)
+		if pageSize < 1 || pageSize > 100 {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
+		}
+
+		// Fetch car details
+		car, err := srv.Database.CarDB.GetCarByLicensePlate(licensePlate)
+		if err != nil {
+			return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Car not found"})
+		}
+
+		totalServices, err := srv.Database.ServiceDB.GetTotalServices(car.LicensePlate)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to fetch total services count"})
+		}
+
+		totalPages := (totalServices + pageSize - 1) / pageSize
+
+		// Fetch services
+		services, err := srv.Database.ServiceDB.GetServices(licensePlate, page, pageSize)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		return c.JSON(fiber.Map{
+			"data": fiber.Map{
+				"car":      car,
+				"services": services,
+			},
+			"meta": fiber.Map{
+				"current_page":   page,
+				"page_size":      pageSize,
+				"total_pages":    totalPages,
+				"total_services": totalServices,
+			},
 		})
 	})
 }

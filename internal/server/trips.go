@@ -10,16 +10,16 @@ import (
 	"github.com/ntentasd/db-deliverable3/internal/middleware"
 )
 
-func (srv *Server) SetupTripRoutes(app *fiber.App, jwtSecret string) {
-	tripGroup := app.Group("/trips")
+func (srv *Server) SetupTripRoutes() {
+	tripGroup := srv.FiberApp.Group("/trips")
 
 	validate := validator.New()
 
 	_ = validate.RegisterValidation("licenseplate", validateLicensePlate)
 
-	authenticatedGroup := tripGroup.Group("/", middleware.JWTMiddleware(jwtSecret))
+	authenticatedGroup := tripGroup.Group("/", middleware.JWTMiddleware(srv.JWTSecret))
 
-	tripGroup.Get("/:license_plate", func(c *fiber.Ctx) error {
+	tripGroup.Get("/car/:license_plate", func(c *fiber.Ctx) error {
 		licensePlate := c.Params("license_plate")
 		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid license plate format"})
@@ -27,12 +27,12 @@ func (srv *Server) SetupTripRoutes(app *fiber.App, jwtSecret string) {
 
 		page := c.QueryInt("page", 1)
 		if page < 1 {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid page number"})
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageNumber.Error()})
 		}
 
 		pageSize := c.QueryInt("page_size", 10)
 		if pageSize < 1 || pageSize > 100 {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid page size"})
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
 		}
 
 		trips, err := srv.Database.TripDB.GetAllTripsForCar(licensePlate, page, pageSize)
@@ -67,12 +67,12 @@ func (srv *Server) SetupTripRoutes(app *fiber.App, jwtSecret string) {
 
 		page := c.QueryInt("page", 1)
 		if page < 1 {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid page number"})
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageNumber.Error()})
 		}
 
-		pageSize := c.QueryInt("page_size", 10)
+		pageSize := c.QueryInt("page_size", 5)
 		if pageSize < 1 || pageSize > 100 {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid page size"})
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
 		}
 
 		totalTrips, err := srv.Database.TripDB.GetTotalTripCountForUser(email)
@@ -95,6 +95,27 @@ func (srv *Server) SetupTripRoutes(app *fiber.App, jwtSecret string) {
 				"total_trips":  totalTrips,
 			},
 		})
+	})
+
+	authenticatedGroup.Get("/active", func(c *fiber.Ctx) error {
+		email, ok := c.Locals(string(middleware.UserEmailKey)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
+
+		car, err := srv.Database.TripDB.GetActiveTrip(email)
+		if err != nil {
+			if err == database.ErrTripNotFound {
+				c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+			}
+			c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		if car.CarLicensePlate == "" {
+			return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "no active trip found"})
+		}
+
+		return c.JSON(car)
 	})
 
 	authenticatedGroup.Post("/start", func(c *fiber.Ctx) error {
