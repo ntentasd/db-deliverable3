@@ -7,18 +7,26 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/ntentasd/db-deliverable3/internal/database"
+	"github.com/ntentasd/db-deliverable3/internal/middleware"
 	"github.com/ntentasd/db-deliverable3/internal/models"
 )
 
 func (srv *Server) SetupCarRoutes() {
-	carGroup := srv.FiberApp.Group("/cars")
+	carGroup := srv.FiberApp.Group("/")
 
 	validate := validator.New()
 
 	_ = validate.RegisterValidation("licenseplate", validateLicensePlate)
 
+	authenticatedGroup := carGroup.Group("/cars", middleware.JWTMiddleware(srv.JWTSecret))
+
 	// Get all cars
-	carGroup.Get("/", func(c *fiber.Ctx) error {
+	authenticatedGroup.Get("/", func(c *fiber.Ctx) error {
+		_, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
+
 		page := c.QueryInt("page", 1)
 		if page < 1 {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageNumber.Error()})
@@ -85,7 +93,11 @@ func (srv *Server) SetupCarRoutes() {
 	})
 
 	// Get car by license plate
-	carGroup.Get("/:license_plate", func(c *fiber.Ctx) error {
+	authenticatedGroup.Get("/:license_plate", func(c *fiber.Ctx) error {
+		_, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
 		licensePlate := c.Params("license_plate")
 		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
@@ -98,8 +110,15 @@ func (srv *Server) SetupCarRoutes() {
 	})
 
 	// Add a new car
-	carGroup.Post("/", func(c *fiber.Ctx) error {
+	authenticatedGroup.Post("/", func(c *fiber.Ctx) error {
 		var car models.Car
+		_, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
+		if role, ok := c.Locals(string(middleware.Role)).(string); !ok || role != "Admin" {
+			return c.Status(http.StatusForbidden).JSON(fiber.Map{"error": "forbidden"})
+		}
 		if err := c.BodyParser(&car); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid input"})
 		}
@@ -114,7 +133,11 @@ func (srv *Server) SetupCarRoutes() {
 	})
 
 	// Update car status
-	carGroup.Put("/:license_plate", func(c *fiber.Ctx) error {
+	authenticatedGroup.Put("/:license_plate", func(c *fiber.Ctx) error {
+		_, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
 		licensePlate := c.Params("license_plate")
 		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
@@ -147,7 +170,14 @@ func (srv *Server) SetupCarRoutes() {
 	})
 
 	// Delete a car
-	carGroup.Delete("/:license_plate", func(c *fiber.Ctx) error {
+	authenticatedGroup.Delete("/:license_plate", func(c *fiber.Ctx) error {
+		_, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
+		if role, ok := c.Locals(string(middleware.Role)).(string); !ok || role != "Admin" {
+			return c.Status(http.StatusForbidden).JSON(fiber.Map{"error": "forbidden"})
+		}
 		licensePlate := c.Params("license_plate")
 		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
@@ -162,7 +192,11 @@ func (srv *Server) SetupCarRoutes() {
 		return c.Status(http.StatusOK).JSON(car)
 	})
 
-	carGroup.Get("/:license_plate/damages", func(c *fiber.Ctx) error {
+	authenticatedGroup.Get("/:license_plate/damages", func(c *fiber.Ctx) error {
+		_, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
 		licensePlate := c.Params("license_plate")
 		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
@@ -211,7 +245,11 @@ func (srv *Server) SetupCarRoutes() {
 		})
 	})
 
-	carGroup.Get("/:license_plate/services", func(c *fiber.Ctx) error {
+	authenticatedGroup.Get("/:license_plate/services", func(c *fiber.Ctx) error {
+		_, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
 		licensePlate := c.Params("license_plate")
 		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
@@ -259,6 +297,8 @@ func (srv *Server) SetupCarRoutes() {
 			},
 		})
 	})
+
+	// Add authenticated Post endpoint for services and damages
 }
 
 func validateLicensePlate(fl validator.FieldLevel) bool {

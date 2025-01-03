@@ -1,5 +1,9 @@
 package models
 
+import (
+	_ "github.com/go-playground/validator/v10"
+)
+
 type Damage struct {
 	ID              int64    `json:"id" validate:"required,gt=0"`
 	CarLicensePlate string   `json:"car_license_plate" validate:"required,len=7,alphanum"`

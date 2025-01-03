@@ -16,15 +16,19 @@ import (
 
 var (
 	ErrValidationFailed = fmt.Errorf("validation failed")
+
+	AdminUser  = fmt.Sprintf("Admin")
+	ClientUser = fmt.Sprintf("Client")
 )
 
 func (srv *Server) SetupUserRoutes() {
+	userGroup := srv.FiberApp
+
 	validator := validator.New()
 
-	baseGroup := srv.FiberApp
-	authenticatedGroup := baseGroup.Group("/user", middleware.JWTMiddleware(srv.JWTSecret))
+	authenticatedGroup := userGroup.Group("/user", middleware.JWTMiddleware(srv.JWTSecret))
 
-	baseGroup.Post("/login", func(c *fiber.Ctx) error {
+	userGroup.Post("/login", func(c *fiber.Ctx) error {
 		var payload struct {
 			Email    string `json:"email" validate:"required,email"`
 			Password string `json:"password" validate:"required"`
@@ -34,6 +38,14 @@ func (srv *Server) SetupUserRoutes() {
 		}
 		if err := validator.Struct(payload); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": ErrValidationFailed.Error()})
+		}
+
+		if isAdmin(payload.Email, payload.Password) {
+			token, err := generateJWT(payload.Email, AdminUser, srv.JWTSecret)
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to generate token"})
+			}
+			return c.JSON(fiber.Map{"token": token})
 		}
 
 		user, err := srv.Database.UserDB.GetUserByEmail(payload.Email)
@@ -48,19 +60,15 @@ func (srv *Server) SetupUserRoutes() {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": database.ErrInvalidCredentials.Error()})
 		}
 
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"email": user.Email,
-			"exp":   time.Now().Add(time.Hour * 24).Unix(),
-		})
-		tokenString, err := token.SignedString([]byte(srv.JWTSecret))
+		token, err := generateJWT(user.Email, ClientUser, srv.JWTSecret)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to generate token"})
 		}
 
-		return c.JSON(fiber.Map{"token": tokenString})
+		return c.JSON(fiber.Map{"token": token})
 	})
 
-	baseGroup.Post("/signup", func(c *fiber.Ctx) error {
+	userGroup.Post("/signup", func(c *fiber.Ctx) error {
 		var payload struct {
 			Email    string `json:"email" validate:"required,email"`
 			UserName string `json:"username" validate:"required"`
@@ -74,6 +82,10 @@ func (srv *Server) SetupUserRoutes() {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": ErrValidationFailed.Error()})
 		}
 
+		if payload.Email == "admin@datadrive.com" {
+			c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrDuplicateEmail})
+		}
+
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
 		if err != nil {
 			c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
@@ -81,17 +93,16 @@ func (srv *Server) SetupUserRoutes() {
 
 		user, err := srv.Database.UserDB.CreateUser(payload.Email, payload.UserName, payload.FullName, string(hashedPassword))
 		if err != nil {
-			if errors.Is(err, database.ErrDuplicateEntry) {
+			if errors.Is(err, database.ErrDuplicateEmail) {
+				return c.Status(http.StatusConflict).JSON(fiber.Map{"error": err.Error()})
+			}
+			if errors.Is(err, database.ErrDuplicateUsername) {
 				return c.Status(http.StatusConflict).JSON(fiber.Map{"error": err.Error()})
 			}
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"email": payload.Email,
-			"exp":   time.Now().Add(time.Hour * 24).Unix(),
-		})
-		tokenString, err := token.SignedString([]byte(srv.JWTSecret))
+		token, err := generateJWT(user.Email, ClientUser, srv.JWTSecret)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to generate token"})
 		}
@@ -99,12 +110,12 @@ func (srv *Server) SetupUserRoutes() {
 		return c.Status(http.StatusCreated).JSON(fiber.Map{
 			"message": "user created successfully",
 			"user":    user,
-			"token":   tokenString,
+			"token":   token,
 		})
 	})
 
 	authenticatedGroup.Get("/", func(c *fiber.Ctx) error {
-		email, ok := c.Locals(string(middleware.UserEmailKey)).(string)
+		email, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
@@ -128,7 +139,7 @@ func (srv *Server) SetupUserRoutes() {
 		if err := validator.Struct(payload); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": ErrValidationFailed.Error()})
 		}
-		email, ok := c.Locals(string(middleware.UserEmailKey)).(string)
+		email, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
@@ -152,7 +163,7 @@ func (srv *Server) SetupUserRoutes() {
 		if err := validator.Struct(payload); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": ErrValidationFailed.Error()})
 		}
-		email, ok := c.Locals(string(middleware.UserEmailKey)).(string)
+		email, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
@@ -166,7 +177,7 @@ func (srv *Server) SetupUserRoutes() {
 	})
 
 	authenticatedGroup.Delete("/", func(c *fiber.Ctx) error {
-		email, ok := c.Locals(string(middleware.UserEmailKey)).(string)
+		email, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
@@ -183,4 +194,24 @@ func (srv *Server) SetupUserRoutes() {
 func validatePassword(hashedPassword, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	return err == nil
+}
+
+func isAdmin(email, password string) bool {
+	if email == "admin@datadrive.com" && password == "password" {
+		return true
+	}
+	return false
+}
+
+func generateJWT(email, role, jwtSecret string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"email": email,
+		"role":  role,
+		"exp":   time.Now().Add(time.Hour * 24).Unix(),
+	})
+	tokenString, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
 }

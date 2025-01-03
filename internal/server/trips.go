@@ -19,7 +19,7 @@ func (srv *Server) SetupTripRoutes() {
 
 	authenticatedGroup := tripGroup.Group("/", middleware.JWTMiddleware(srv.JWTSecret))
 
-	tripGroup.Get("/car/:license_plate", func(c *fiber.Ctx) error {
+	authenticatedGroup.Get("/car/:license_plate", func(c *fiber.Ctx) error {
 		licensePlate := c.Params("license_plate")
 		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid license plate format"})
@@ -60,7 +60,7 @@ func (srv *Server) SetupTripRoutes() {
 	})
 
 	authenticatedGroup.Get("/", func(c *fiber.Ctx) error {
-		email, ok := c.Locals(string(middleware.UserEmailKey)).(string)
+		email, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
@@ -98,7 +98,7 @@ func (srv *Server) SetupTripRoutes() {
 	})
 
 	authenticatedGroup.Get("/active", func(c *fiber.Ctx) error {
-		email, ok := c.Locals(string(middleware.UserEmailKey)).(string)
+		email, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
@@ -129,7 +129,7 @@ func (srv *Server) SetupTripRoutes() {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid license plate format"})
 		}
 
-		email, ok := c.Locals(string(middleware.UserEmailKey)).(string)
+		email, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
@@ -175,7 +175,7 @@ func (srv *Server) SetupTripRoutes() {
 	})
 
 	authenticatedGroup.Post("/stop", func(c *fiber.Ctx) error {
-		email, ok := c.Locals(string(middleware.UserEmailKey)).(string)
+		email, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
