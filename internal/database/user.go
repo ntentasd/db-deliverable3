@@ -116,20 +116,18 @@ func (db *UserDB) CreateUser(email, username, full_name, password string) (model
 	// Check if email is already taken
 	emailCheckQuery := `SELECT email FROM Users WHERE email = ?`
 	err := db.DB.QueryRow(emailCheckQuery, email).Scan(&user.Email)
-	if err != nil {
-		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
-			return models.User{}, ErrDuplicateEmail
-		}
+	if err == nil {
+		return models.User{}, ErrDuplicateEmail
+	} else if err != sql.ErrNoRows {
 		return models.User{}, err
 	}
 
 	// Check if username is already taken
 	usernameCheckQuery := `SELECT username FROM Users WHERE username = ?`
 	err = db.DB.QueryRow(usernameCheckQuery, username).Scan(&user.UserName)
-	if err != nil {
-		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
-			return models.User{}, ErrDuplicateUsername
-		}
+	if err == nil {
+		return models.User{}, ErrDuplicateUsername
+	} else if err != sql.ErrNoRows {
 		return models.User{}, err
 	}
 
