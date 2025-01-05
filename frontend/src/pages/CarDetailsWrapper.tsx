@@ -50,19 +50,19 @@ const CarDetailsWrapper: React.FC = () => {
         onClick={() => setServicePage((prev) => Math.max(prev - 1, 1))}
         disabled={servicePage === 1}
         className={`px-4 py-2 rounded ${
-          servicePage === 1 ? "bg-gray-300 cursor-not-allowed" : "bg-blue-500 text-white hover:bg-blue-600"
+          servicePage === 1 ? "bg-gray-700 text-gray-500 cursor-not-allowed" : "bg-teal-500 text-white hover:bg-teal-600"
         }`}
       >
         Previous
       </button>
-      <span className="text-gray-600">
+      <span className="text-gray-400">
         Page {servicePage} of {serviceTotalPages}
       </span>
       <button
         onClick={() => setServicePage((prev) => Math.min(prev + 1, serviceTotalPages))}
         disabled={servicePage === serviceTotalPages}
         className={`px-4 py-2 rounded ${
-          servicePage === serviceTotalPages ? "bg-gray-300 cursor-not-allowed" : "bg-blue-500 text-white hover:bg-blue-600"
+          servicePage === serviceTotalPages ? "bg-gray-700 text-gray-500 cursor-not-allowed" : "bg-teal-500 text-white hover:bg-teal-600"
         }`}
       >
         Next
@@ -76,19 +76,19 @@ const CarDetailsWrapper: React.FC = () => {
         onClick={() => setDamagePage((prev) => Math.max(prev - 1, 1))}
         disabled={damagePage === 1}
         className={`px-4 py-2 rounded ${
-          damagePage === 1 ? "bg-gray-300 cursor-not-allowed" : "bg-blue-500 text-white hover:bg-blue-600"
+          damagePage === 1 ? "bg-gray-700 text-gray-500 cursor-not-allowed" : "bg-teal-500 text-white hover:bg-teal-600"
         }`}
       >
         Previous
       </button>
-      <span className="text-gray-600">
+      <span className="text-gray-400">
         Page {damagePage} of {damageTotalPages}
       </span>
       <button
         onClick={() => setDamagePage((prev) => Math.min(prev + 1, damageTotalPages))}
         disabled={damagePage === damageTotalPages}
         className={`px-4 py-2 rounded ${
-          damagePage === damageTotalPages ? "bg-gray-300 cursor-not-allowed" : "bg-blue-500 text-white hover:bg-blue-600"
+          damagePage === damageTotalPages ? "bg-gray-700 text-gray-500 cursor-not-allowed" : "bg-teal-500 text-white hover:bg-teal-600"
         }`}
       >
         Next
@@ -97,26 +97,26 @@ const CarDetailsWrapper: React.FC = () => {
   ), [damagePage, damageTotalPages]);
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 bg-gray-900 rounded-lg">
       <Helmet>
         <title>DataDrive - {license_plate}'s Details</title>
       </Helmet>
-      <h2 className="text-2xl font-bold mb-4">Car Details - {license_plate}</h2>
+      <h2 className="text-3xl font-bold mb-6 text-teal-400">Car Details - {license_plate}</h2>
 
-      <h3 className="text-xl font-semibold mt-6">Services</h3>
-      <ul className="space-y-4">
+      <h3 className="text-2xl font-semibold mt-6 text-gray-300">Services</h3>
+      <ul className="space-y-4 py-4">
         {services.map((service) => (
           <li
             key={service.id}
-            className="border p-4 rounded shadow hover:shadow-lg"
+            className="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-md transition"
           >
-            <p className="text-gray-600">
+            <p className="text-gray-400">
               <strong>Date:</strong> {new Date(service.service_date).toLocaleDateString()}
             </p>
-            <p className="text-gray-600">
+            <p className="text-gray-400">
               <strong>Description:</strong> {service.description || "N/A"}
             </p>
-            <p className="text-gray-600">
+            <p className="text-gray-400">
               <strong>Cost:</strong> {service.service_cost}€
             </p>
           </li>
@@ -124,23 +124,26 @@ const CarDetailsWrapper: React.FC = () => {
       </ul>
       {servicePaginationControls}
 
-      <h3 className="text-xl font-semibold mt-6">Damages</h3>
-      <ul className="space-y-4">
+      <h3 className="text-2xl font-semibold mt-6 text-gray-300">Damages</h3>
+      <ul className="space-y-4 py-4">
         {damages.map((damage) => (
           <li
             key={damage.id}
-            className="border p-4 rounded shadow hover:shadow-lg"
+            className="bg-gray-800 p-4 rounded-lg shadow-lg hover:shadow-md transition"
           >
-            <p className="text-gray-600">
+            <p className="text-gray-400">
               <strong>Date:</strong> {new Date(damage.reported_date).toLocaleDateString()}
             </p>
-            <p className="text-gray-600">
+            <p className="text-gray-400">
               <strong>Description:</strong> {damage.description || "N/A"}
             </p>
-            <p className="text-gray-600">
-              <strong>Repaired:</strong> {damage.repaired ? "Yes" : "No"}
+            <p className="text-gray-400">
+              <strong>Repaired:</strong>{" "}
+              <span className={damage.repaired ? "text-green-400" : "text-red-400"}>
+                {damage.repaired ? "Yes" : "No"}
+              </span>
             </p>
-            <p className="text-gray-600">
+            <p className="text-gray-400">
               <strong>Cost:</strong> {damage.repair_cost}€
             </p>
           </li>

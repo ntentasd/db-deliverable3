@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { login } from "../services/usersApi";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import { capitalizeFirstLetter } from "../services/formatUtils";
 
 const LoginForm: React.FC = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { setAuthToken } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -20,21 +22,14 @@ const LoginForm: React.FC = () => {
 
     try {
       const response = await login(formData.email, formData.password);
-      console.log("Login response:", response);
 
       if (response.token) {
-        localStorage.setItem("authToken", response.token);
-
-        // Delay navigation to ensure token is set
-        setTimeout(() => {
-          navigate("/profile");
-        }, 100);
+        setAuthToken(response.token); // Set token in AuthContext
+        navigate("/profile"); // Redirect to profile after login
       } else {
-        console.error("No token received from login response.");
         setError("Login failed. Please try again.");
       }
     } catch (err: any) {
-      console.error("Login error:", err);
       setError(err.response?.data?.error || "An unexpected error occurred.");
     } finally {
       setIsLoading(false);
@@ -42,13 +37,14 @@ const LoginForm: React.FC = () => {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-4"
-    >
-      {error && <p className="text-red-500 text-sm text-center">{capitalizeFirstLetter(error)}</p>}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <p className="text-red-500 text-sm text-center">
+          {capitalizeFirstLetter(error)}
+        </p>
+      )}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="email" className="block text-sm font-medium text-gray-400">
           Email
         </label>
         <input
@@ -57,12 +53,12 @@ const LoginForm: React.FC = () => {
           name="email"
           value={formData.email}
           onChange={handleChange}
-          className="w-full border border-gray-300 p-2 rounded focus:ring-blue-500 focus:border-blue-500"
+          className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
           required
         />
       </div>
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="password" className="block text-sm font-medium text-gray-400">
           Password
         </label>
         <input
@@ -71,17 +67,18 @@ const LoginForm: React.FC = () => {
           name="password"
           value={formData.password}
           onChange={handleChange}
-          className="w-full border border-gray-300 p-2 rounded focus:ring-blue-500 focus:border-blue-500"
+          className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500"
           required
         />
       </div>
       <button
         type="submit"
         disabled={isLoading}
-        className={`w-full bg-blue-500 text-white p-3 rounded hover:bg-blue-600 ${
-          isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+        className={`w-full p-3 rounded-lg font-semibold text-white transition-all duration-300 ${
+          isLoading
+            ? "bg-gray-500 cursor-not-allowed"
+            : "bg-teal-500 hover:bg-teal-600"
         }`}
-        style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}
       >
         {isLoading ? "Logging in..." : "Log In"}
       </button>

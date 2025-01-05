@@ -7,7 +7,7 @@ export interface Trip {
   start_time: string;
   end_time: string | null;
   distance?: number;
-  driving_behavior?: number;
+  driving_behavior: number;
 }
 
 interface TripResponse {
@@ -47,17 +47,16 @@ export const startTrip = async (license_plate: string): Promise<any> => {
   return response.data;
 };
 
-export const stopTrip = async (): Promise<any> => {
+export const stopTrip = async (distance: number, driving_behavior: number): Promise<any> => {
   const response = await api.post(
     `/trips/stop`,
-    {},
+    { distance, driving_behavior },
     { headers: { ...authHeaders(), "Content-Type": "application/json" } }
   );
-  console.log("Stop trip response:", response.data);
   return response.data;
 };
 
-export const getTripById = async (trip_id: string): Promise<any> => {
+export const getTripById = async (trip_id: string): Promise<Trip> => {
   const response = await api.get(
     `/trips/details/${trip_id}`,
     { headers: { ...authHeaders(), 'Content-Type': 'application/json' } }
@@ -69,3 +68,11 @@ export const updateTrip = async (trip_id: string, trip: any): Promise<any> => {
   const response = await api.put(`/trips/${trip_id}`, trip, { headers: authHeaders() });
   return response.data;
 };
+
+export const isSingleTrip = (data: Trip[] | Trip): data is Trip => {
+  return !Array.isArray(data);
+};
+
+export const isTripList = (data: Trip[] | Trip): data is Trip[] => {
+  return Array.isArray(data);
+}

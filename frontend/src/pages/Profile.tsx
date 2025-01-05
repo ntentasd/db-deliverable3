@@ -1,8 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { deleteAccount, fetchDetails, updateFullname, updateUsername, UserMessage } from "../services/usersApi";
+import {
+  deleteAccount,
+  fetchDetails,
+  updateFullname,
+  updateUsername,
+  UserMessage,
+} from "../services/usersApi";
 import { User } from "../services/usersApi";
 import { capitalizeFirstLetter, formatDateTime } from "../services/formatUtils";
-import ProfileInfo from "../components/ProfileInfo";
 import EditableField from "../components/EditableField";
 import { isAdminJWT } from "../services/authUtils";
 import { Helmet } from "react-helmet";
@@ -58,11 +63,11 @@ const Profile: React.FC = () => {
     const userConfirmed = window.confirm(
       "Are you sure you want to delete your account? This action cannot be undone."
     );
-  
+
     if (!userConfirmed) {
       return;
     }
-  
+
     try {
       const response = await deleteAccount();
       alert(capitalizeFirstLetter(response.message));
@@ -76,16 +81,16 @@ const Profile: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-600 text-lg">Loading user details...</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-gray-300">
+        <p className="text-lg">Loading user details...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-red-500 text-lg">{error}</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-red-500">
+        <p className="text-lg">{error}</p>
       </div>
     );
   }
@@ -93,54 +98,64 @@ const Profile: React.FC = () => {
   const username = user?.user_name || "";
 
   return (
-    <div className="max-w-4xl mx-auto mt-8 p-6 bg-white border rounded-lg shadow-md">
+    <div className="max-w-4xl mx-auto mt-8 p-8 bg-gray-800 border border-gray-700 rounded-lg shadow-lg">
       <Helmet>
         <title>DataDrive - {capitalizeFirstLetter(username)}'s Profile</title>
       </Helmet>
-      <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
+      <h2 className="text-3xl font-bold mb-8 text-center text-teal-400">
         {isAdmin ? "Admin Profile" : "User Profile"}
       </h2>
       {user ? (
         <div className="space-y-6">
-          {isAdmin ? (
-            <>
-              <ProfileInfo label="Username" value={user.user_name} />
-              <ProfileInfo label="Fullname" value={user.full_name} />
-            </>
-          ) : (
-            <>
-              <EditableField
-                label="Username"
-                value={user.user_name || ""}
-                onSave={handleUpdateUsername}
-              />
-              <EditableField
-                label="Fullname"
-                value={user.full_name || ""}
-                onSave={handleUpdateFullname}
-              />
-            </>
-          )}
-          <ProfileInfo label="Email" value={user.email || ""} />
+          <div className="space-y-4">
+            <div className="flex justify-between items-center border-b border-gray-600 pb-4">
+              <span className="text-gray-300 font-semibold">Username:</span>
+              {isAdmin ? (
+                <span className="text-white">{user.user_name}</span>
+              ) : (
+                <EditableField
+                  label=""
+                  value={user.user_name || ""}
+                  onSave={handleUpdateUsername}
+                />
+              )}
+            </div>
+            <div className="flex justify-between items-center border-b border-gray-600 pb-4">
+              <span className="text-gray-300 font-semibold">Fullname:</span>
+              {isAdmin ? (
+                <span className="text-white">{user.full_name}</span>
+              ) : (
+                <EditableField
+                  label=""
+                  value={user.full_name || ""}
+                  onSave={handleUpdateFullname}
+                />
+              )}
+            </div>
+            <div className="flex justify-between items-center border-b border-gray-600 pb-4">
+              <span className="text-gray-300 font-semibold">Email:</span>
+              <span className="text-white">{user.email || ""}</span>
+            </div>
+            {!isAdmin && (
+              <div className="flex justify-between items-center border-b border-gray-600 pb-4">
+                <span className="text-gray-300 font-semibold">Joined:</span>
+                <span className="text-white">{formatDateTime(user.created_at) || ""}</span>
+              </div>
+            )}
+          </div>
           {!isAdmin && (
-            <>
-            <ProfileInfo
-              label="Joined"
-              value={formatDateTime(user.created_at) || ""}
-            />
             <div className="text-center mt-6">
               <button
                 onClick={handleDeleteAccount}
-                className="bg-red-600 text-white px-6 py-2 rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200 active:ring-offset-0"
+                className="bg-red-500 text-white px-6 py-2 rounded-lg shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200 active:ring-offset-0"
               >
                 Delete Account
               </button>
             </div>
-            </>
           )}
         </div>
       ) : (
-        <p>No user data available.</p>
+        <p className="text-gray-400">No user data available.</p>
       )}
     </div>
   );

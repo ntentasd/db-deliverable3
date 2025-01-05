@@ -15,7 +15,7 @@ const TripList: React.FC = () => {
       setCurrentPage(data.meta.current_page);
       setTotalPages(data.meta.total_pages);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to fetch trips.");
     }
   };
 
@@ -38,14 +38,13 @@ const TripList: React.FC = () => {
   const filteredTrips = trips.filter((trip) => trip.end_time !== undefined);
 
   if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
+    return <div className="text-red-500 text-center mt-4">{error}</div>;
   }
 
   return (
     <div className="mt-6">
-      <h2 className="text-xl font-bold mb-4">Trips</h2>
       {filteredTrips.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-6">
           {filteredTrips.map((trip) => (
             <TripCard key={trip.id} trip={trip} />
           ))}
@@ -56,28 +55,28 @@ const TripList: React.FC = () => {
         </div>
       )}
       {filteredTrips.length > 0 && (
-        <div className="flex justify-between items-center mt-4">
+        <div className="flex justify-between items-center mt-6">
           <button
             onClick={handlePreviousPage}
             disabled={currentPage === 1}
-            className={`px-4 py-2 rounded ${
+            className={`px-6 py-2 rounded-lg font-medium transition-colors duration-300 ${
               currentPage === 1
-                ? "bg-gray-300 cursor-not-allowed"
-                : "bg-blue-500 text-white hover:bg-blue-600"
+                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                : "bg-teal-500 text-white hover:bg-teal-600"
             }`}
           >
             Previous
           </button>
-          <span className="text-gray-600">
+          <span className="text-gray-300 font-medium">
             Page {currentPage} of {totalPages}
           </span>
           <button
             onClick={handleNextPage}
             disabled={currentPage === totalPages}
-            className={`px-4 py-2 rounded ${
+            className={`px-6 py-2 rounded-lg font-medium transition-colors duration-300 ${
               currentPage === totalPages
-                ? "bg-gray-300 cursor-not-allowed"
-                : "bg-blue-500 text-white hover:bg-blue-600"
+                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                : "bg-teal-500 text-white hover:bg-teal-600"
             }`}
           >
             Next

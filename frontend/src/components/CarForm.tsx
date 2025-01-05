@@ -21,22 +21,18 @@ const CarForm: React.FC<CarFormProps> = ({ onInsert }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       const newCar = {
         license_plate: formData.license_plate,
         make: formData.make,
         model: formData.model,
         status: formData.status,
-        cost_per_km: parseFloat(
-          formData.costPerKm.replace(",", ".")
-        ),
+        cost_per_km: parseFloat(formData.costPerKm.replace(",", ".")),
         location: formData.location,
       };
 
       await addCar(newCar);
       alert("Car added successfully!");
-
       setFormData({
         license_plate: "",
         make: "",
@@ -46,9 +42,7 @@ const CarForm: React.FC<CarFormProps> = ({ onInsert }) => {
         location: "",
       });
 
-      if (onInsert) {
-        onInsert();
-      }
+      if (onInsert) onInsert();
     } catch (error) {
       console.error("Failed to add car:", error);
       alert("Failed to add car.");
@@ -56,66 +50,75 @@ const CarForm: React.FC<CarFormProps> = ({ onInsert }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 border p-4 rounded shadow">
-      <h2 className="text-xl font-bold">Add a New Car</h2>
+    <form
+      onSubmit={handleSubmit}
+      className="bg-gray-800 p-6 rounded-lg shadow-md space-y-6"
+    >
+      <h2 className="text-2xl font-bold text-teal-400">Add a New Car</h2>
       <div>
-        <label className="block text-sm font-medium">License Plate</label>
+        <label className="block text-sm font-medium text-gray-300">
+          License Plate
+        </label>
         <input
           type="text"
           name="license_plate"
           value={formData.license_plate}
           onChange={handleChange}
-          className="w-full border p-2 rounded"
+          className="w-full p-2 mt-1 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
           required
         />
       </div>
       <div>
-        <label className="block text-sm font-medium">Make</label>
+        <label className="block text-sm font-medium text-gray-300">Make</label>
         <input
           type="text"
           name="make"
           value={formData.make}
           onChange={handleChange}
-          className="w-full border p-2 rounded"
+          className="w-full p-2 mt-1 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
           required
         />
       </div>
       <div>
-        <label className="block text-sm font-medium">Model</label>
+        <label className="block text-sm font-medium text-gray-300">Model</label>
         <input
           type="text"
           name="model"
           value={formData.model}
           onChange={handleChange}
-          className="w-full border p-2 rounded"
+          className="w-full p-2 mt-1 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
           required
         />
       </div>
       <div>
-        <label className="block text-sm font-medium">Cost Per KM</label>
+        <label className="block text-sm font-medium text-gray-300">
+          Cost Per KM
+        </label>
         <input
           type="text"
           name="costPerKm"
           value={formData.costPerKm}
           onChange={handleChange}
-          className="w-full border p-2 rounded"
+          className="w-full p-2 mt-1 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
           required
         />
       </div>
       <div>
-        <label className="block text-sm font-medium">Location</label>
+        <label className="block text-sm font-medium text-gray-300">
+          Location
+        </label>
         <input
           type="text"
           name="location"
           value={formData.location}
           onChange={handleChange}
-          className="w-full border p-2 rounded"
+          className="w-full p-2 mt-1 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
           required
         />
       </div>
       <button
         type="submit"
-        className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+        className="w-full bg-teal-500 text-white py-2 rounded hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
       >
         Add Car
       </button>

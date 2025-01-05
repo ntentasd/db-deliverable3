@@ -27,9 +27,12 @@ const EditableField: React.FC<EditableFieldProps> = ({ label, value, onSave }) =
       setStatusMessage({ type: "success", text: response.message });
       setIsEditing(false);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error ||
-        `Failed to update ${label}.`;
-      setStatusMessage({ type: "error", text: capitalizeFirstLetter(errorMessage) });
+      const errorMessage =
+        error.response?.data?.error || `Failed to update ${label}.`;
+      setStatusMessage({
+        type: "error",
+        text: capitalizeFirstLetter(errorMessage),
+      });
     }
   };
 
@@ -40,44 +43,49 @@ const EditableField: React.FC<EditableFieldProps> = ({ label, value, onSave }) =
   };
 
   return (
-    <div className="flex flex-col space-y-1">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+    <div className="flex flex-col space-y-2">
+      <label className="block text-sm font-medium text-gray-300">{label}</label>
       {isEditing ? (
         <div className="flex items-center space-x-2">
           <input
             type="text"
             value={tempValue}
             onChange={(e) => setTempValue(e.target.value)}
-            className="flex-grow border p-2 rounded"
+            className="flex-grow p-2 rounded bg-gray-800 text-gray-100 border border-blue-400 focus:border-blue-600 focus:outline-none"
           />
           <button
             onClick={handleSave}
-            className="text-green-500 hover:text-green-700"
+            className="text-green-400 hover:text-green-500 transition duration-200"
+            title="Save"
           >
-            <FaCheck />
+            <FaCheck size={18} />
           </button>
           <button
             onClick={handleCancel}
-            className="text-red-500 hover:text-red-700"
+            className="text-red-400 hover:text-red-500 transition duration-200"
+            title="Cancel"
           >
-            <FaTimes />
+            <FaTimes size={18} />
           </button>
         </div>
       ) : (
         <div className="flex items-center space-x-2">
-          <p className="text-gray-600">{value || "N/A"}</p>
+          <p className="text-gray-100">{value || "N/A"}</p>
           <button
             onClick={() => setIsEditing(true)}
-            className="text-blue-500 hover:text-blue-700"
+            className="text-purple-400 hover:text-purple-500 transition duration-200"
+            title="Edit"
           >
-            <FaEdit />
+            <FaEdit size={18} />
           </button>
         </div>
       )}
       {statusMessage.type && (
         <p
-          className={`text-sm ${
-            statusMessage.type === "success" ? "text-green-600" : "text-red-600"
+          className={`text-sm mt-1 ${
+            statusMessage.type === "success"
+              ? "text-green-500"
+              : "text-red-500"
           }`}
         >
           {statusMessage.text}

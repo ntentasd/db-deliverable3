@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { signup } from "../services/usersApi";
 import { useNavigate } from "react-router-dom";
 import { capitalizeFirstLetter } from "../services/formatUtils";
+import { useAuth } from "../contexts/AuthContext";
 
 const SignupForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ const SignupForm: React.FC = () => {
   });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { setAuthToken } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,7 +36,7 @@ const SignupForm: React.FC = () => {
         trimmedData.full_name,
         trimmedData.password
       );
-      localStorage.setItem("authToken", response.token);
+      setAuthToken(response.token);
       navigate("/profile");
     } catch (err: any) {
       setError(err.response?.data?.error || "An unexpected error occurred.");
@@ -44,13 +46,14 @@ const SignupForm: React.FC = () => {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-4"
-    >
-      {error && <p className="text-red-500 text-sm text-center">{capitalizeFirstLetter(error)}</p>}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <p className="text-red-500 text-sm text-center">
+          {capitalizeFirstLetter(error)}
+        </p>
+      )}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="email" className="block text-sm font-medium text-gray-400">
           Email
         </label>
         <input
@@ -59,12 +62,12 @@ const SignupForm: React.FC = () => {
           name="email"
           value={formData.email}
           onChange={handleChange}
-          className="w-full border border-gray-300 p-2 rounded focus:ring-blue-500 focus:border-blue-500"
+          className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         />
       </div>
       <div>
-        <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="username" className="block text-sm font-medium text-gray-400">
           Username
         </label>
         <input
@@ -73,12 +76,12 @@ const SignupForm: React.FC = () => {
           name="username"
           value={formData.username}
           onChange={handleChange}
-          className="w-full border border-gray-300 p-2 rounded focus:ring-blue-500 focus:border-blue-500"
+          className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         />
       </div>
       <div>
-        <label htmlFor="full_name" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="full_name" className="block text-sm font-medium text-gray-400">
           Full Name
         </label>
         <input
@@ -87,12 +90,12 @@ const SignupForm: React.FC = () => {
           name="full_name"
           value={formData.full_name}
           onChange={handleChange}
-          className="w-full border border-gray-300 p-2 rounded focus:ring-blue-500 focus:border-blue-500"
+          className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         />
       </div>
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="password" className="block text-sm font-medium text-gray-400">
           Password
         </label>
         <input
@@ -101,17 +104,18 @@ const SignupForm: React.FC = () => {
           name="password"
           value={formData.password}
           onChange={handleChange}
-          className="w-full border border-gray-300 p-2 rounded focus:ring-blue-500 focus:border-blue-500"
+          className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         />
       </div>
       <button
         type="submit"
         disabled={isLoading}
-        className={`w-full bg-green-500 text-white p-3 rounded hover:bg-green-600 ${
-          isLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+        className={`w-full p-3 rounded-lg font-semibold text-white transition-all duration-300 ${
+          isLoading
+            ? "bg-gray-500 cursor-not-allowed"
+            : "bg-purple-500 hover:bg-purple-600"
         }`}
-        style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}
       >
         {isLoading ? "Signing up..." : "Sign Up"}
       </button>

@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getActiveTrip, stopTrip } from "../services/tripsApi";
+import { getActiveTrip } from "../services/tripsApi";
 import { useRefresh } from "../contexts/RefreshContext";
+import { formatLicensePlate } from "../services/formatUtils";
 
-interface ActiveTripPopupProps {
-  onRefresh: () => void;
-}
-
-const ActiveTripPopup: React.FC<ActiveTripPopupProps> = ({ onRefresh }) => {
+const ActiveTripPopup: React.FC = () => {
   const [activeTrip, setActiveTrip] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { triggerRefresh } = useRefresh();
@@ -36,14 +33,21 @@ const ActiveTripPopup: React.FC<ActiveTripPopupProps> = ({ onRefresh }) => {
   }, [triggerRefresh]);
 
   const handleStopTrip = async () => {
-    try {
-      await stopTrip();
-      alert("Trip stopped successfully!");
-      setActiveTrip(null);
-      onRefresh();
-      triggerRefresh();
-    } catch (err: any) {
-      alert(`Failed to stop trip: ${err.response?.data?.error || "Unknown error"}`);
+    // try {
+    //   await stopTrip();
+    //   alert("Trip stopped successfully!");
+    //   setActiveTrip(null);
+    //   onRefresh();
+    //   triggerRefresh();
+    // } catch (err: any) {
+    //   alert(`Failed to stop trip: ${err.response?.data?.error || "Unknown error"}`);
+    // }
+
+    if (activeTrip?.id) {
+      // navigate(`/trips/${activeTrip.id}`);
+      navigate(`/trips/${activeTrip.id}`, { state: { showStopTripModal: true } });
+    } else {
+      alert("No active trip details available.");
     }
   };
 
@@ -60,21 +64,25 @@ const ActiveTripPopup: React.FC<ActiveTripPopupProps> = ({ onRefresh }) => {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded shadow-lg space-y-2">
-      {error && <p className="text-red-500">{error}</p>}
-      <h3 className="text-lg font-bold">Active Trip</h3>
-      <p><strong>Car:</strong> {activeTrip?.car_license_plate || "N/A"}</p>
-      <p><strong>Start:</strong> {new Date(activeTrip?.start_time).toLocaleString()}</p>
+    <div className="fixed bottom-4 right-4 bg-gray-800 text-gray-200 p-4 rounded-lg shadow-lg space-y-2">
+      {error && <p className="text-red-400">{error}</p>}
+      <h3 className="text-lg font-bold text-teal-400">Active Trip</h3>
+      <p className="text-gray-300">
+        <strong>Car:</strong> {formatLicensePlate(activeTrip?.car_license_plate) || "N/A"}
+      </p>
+      <p className="text-gray-300">
+        <strong>Start:</strong> {new Date(activeTrip?.start_time).toLocaleString()}
+      </p>
       <div className="flex space-x-2 mt-4">
         <button
           onClick={handleStopTrip}
-          className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700"
+          className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition duration-300"
         >
           Stop Trip
         </button>
         <button
           onClick={handleViewDetails}
-          className="bg-gray-100 text-blue-500 py-2 px-4 rounded hover:bg-gray-200"
+          className="bg-teal-500 text-white py-2 px-4 rounded hover:bg-teal-600 transition duration-300"
         >
           View Details
         </button>

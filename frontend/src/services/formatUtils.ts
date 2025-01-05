@@ -8,6 +8,10 @@ export const formatPlaceholder = (value: number | null | undefined, unit?: strin
   return value == null ? "Not yet calculated" : `${value}${unit ? ` ${unit}` : ""}`;
 };
 
+export const formatLicensePlate = (value: string): string => {
+  return value.slice(0, 3) + '-' + value.slice(3)
+}
+
 export const capitalizeFirstLetter = (text: string): string => {
   if (!text) return "";
   return text.charAt(0).toUpperCase() + text.slice(1);
