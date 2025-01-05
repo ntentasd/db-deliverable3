@@ -13,15 +13,15 @@ import (
 func (srv *Server) SetupTripRoutes() {
 	tripGroup := srv.FiberApp.Group("/trips")
 
-	validate := validator.New()
+	validator := validator.New()
 
-	_ = validate.RegisterValidation("licenseplate", validateLicensePlate)
+	_ = validator.RegisterValidation("licenseplate", validateLicensePlate)
 
 	authenticatedGroup := tripGroup.Group("/", middleware.JWTMiddleware(srv.JWTSecret))
 
 	authenticatedGroup.Get("/car/:license_plate", func(c *fiber.Ctx) error {
 		licensePlate := c.Params("license_plate")
-		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
+		if err := validator.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid license plate format"})
 		}
 
@@ -43,15 +43,20 @@ func (srv *Server) SetupTripRoutes() {
 	})
 
 	authenticatedGroup.Get("/details/:id", func(c *fiber.Ctx) error {
+		email, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
+
 		tripID := c.Params("id")
 		if tripID == "" {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid trip ID"})
 		}
 
-		trip, err := srv.Database.TripDB.GetTripByID(tripID)
+		trip, err := srv.Database.TripDB.GetTripByID(tripID, email)
 		if err != nil {
 			if err == database.ErrTripNotFound {
-				return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "trip not found"})
+				return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 			}
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -125,7 +130,7 @@ func (srv *Server) SetupTripRoutes() {
 		if err := c.BodyParser(&requestBody); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 		}
-		if err := validate.Var(requestBody.LicensePlate, "required,licenseplate"); err != nil {
+		if err := validator.Var(requestBody.LicensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid license plate format"})
 		}
 
@@ -175,9 +180,20 @@ func (srv *Server) SetupTripRoutes() {
 	})
 
 	authenticatedGroup.Post("/stop", func(c *fiber.Ctx) error {
+		var payload struct {
+			Distance        float64 `json:"distance" validate:"required,gt=0"`
+			DrivingBehavior float64 `json:"driving_behavior" validate:"required,gt=0,max=1"`
+		}
 		email, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
+
+		if err := c.BodyParser(&payload); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		}
+		if err := validator.Struct(payload); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": ErrValidationFailed.Error()})
 		}
 
 		car, err := srv.Database.TripDB.FindActiveTripCar(email)
@@ -201,7 +217,7 @@ func (srv *Server) SetupTripRoutes() {
 			}
 		}()
 
-		err = srv.Database.TripDB.EndTrip(tx, email)
+		err = srv.Database.TripDB.EndTrip(tx, email, payload.Distance, payload.DrivingBehavior)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
