@@ -159,7 +159,6 @@ func (db *UserDB) DeleteUser(email string) error {
 	query := `
 		DELETE FROM Users
 		WHERE email = ?
-		CASCADE
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
