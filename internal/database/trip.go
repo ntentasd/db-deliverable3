@@ -149,10 +149,13 @@ func (db *TripDB) CreateTrip(tx *sql.Tx, email, licensePlate string) error {
 	return err
 }
 
-func (db *TripDB) EndTrip(tx *sql.Tx, email string) error {
+func (db *TripDB) EndTrip(tx *sql.Tx, email string, distance, driving_behavior float64) error {
 	query := `
 		UPDATE Trips
-		SET end_time = NOW()
+		SET
+			end_time = NOW(),
+			distance = ?,
+			driving_behavior = ?
 		WHERE user_email = ? AND end_time IS NULL
 	`
 
@@ -160,11 +163,11 @@ func (db *TripDB) EndTrip(tx *sql.Tx, email string) error {
 	defer cancel()
 
 	if tx != nil {
-		_, err := tx.ExecContext(ctx, query, email)
+		_, err := tx.ExecContext(ctx, query, distance, driving_behavior, email)
 		return err
 	}
 
-	_, err := db.DB.ExecContext(ctx, query, email)
+	_, err := db.DB.ExecContext(ctx, query, distance, driving_behavior, email)
 	return err
 }
 
@@ -213,18 +216,19 @@ func (db *TripDB) FindActiveTripCar(email string) (models.Car, error) {
 	return car, nil
 }
 
-func (db *TripDB) GetTripByID(id string) (models.Trip, error) {
+func (db *TripDB) GetTripByID(id, email string) (models.Trip, error) {
 	query := `
 			SELECT id, user_email, car_license_plate, start_time, end_time, driving_behavior, distance
 			FROM Trips
 			WHERE id = ?
+			AND user_email = ?
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	var trip models.Trip
-	err := db.DB.QueryRowContext(ctx, query, id).Scan(
+	err := db.DB.QueryRowContext(ctx, query, id, email).Scan(
 		&trip.ID,
 		&trip.UserEmail,
 		&trip.CarLicensePlate,
