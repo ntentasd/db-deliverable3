@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Car, getAllCarsPaginated } from "../services/carsApi";
 import CarCard from "./CarCard";
+import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
 interface CarListProps {
   setOnInsertHandler: (handler: () => void) => void;
@@ -82,33 +83,27 @@ const CarList: React.FC<CarListProps> = ({ setOnInsertHandler }) => {
       </ul>
 
       {/* Pagination Controls */}
-      <div className="flex justify-between items-center">
-        <button
-          onClick={handlePreviousPage}
-          disabled={currentPage === 1}
-          className={`px-4 py-2 rounded ${
-            currentPage === 1
-              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-              : "bg-teal-500 text-white hover:bg-teal-600"
-          }`}
-        >
-          Previous
-        </button>
-        <span className="text-gray-400">
-          Page {currentPage} of {totalPages}
-        </span>
-        <button
-          onClick={handleNextPage}
-          disabled={currentPage === totalPages}
-          className={`px-4 py-2 rounded ${
-            currentPage === totalPages
-              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-              : "bg-teal-500 text-white hover:bg-teal-600"
-          }`}
-        >
-          Next
-        </button>
-      </div>
+      {filteredCars.length > 0 && (
+        <div className="flex justify-between items-center mt-6">
+          <button
+            onClick={handlePreviousPage}
+            disabled={currentPage === 1}
+            className="p-2 rounded-full bg-gray-700 hover:bg-teal-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FaArrowLeft size={18} className="text-white" />
+          </button>
+          <span className="text-gray-400 font-medium">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={handleNextPage}
+            disabled={currentPage === totalPages}
+            className="p-2 rounded-full bg-gray-700 hover:bg-teal-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FaArrowRight size={18} className="text-white" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

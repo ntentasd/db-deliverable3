@@ -3,11 +3,11 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, isAdmin, setAuthToken } = useAuth(); // Get setAuthToken from context
+  const { isAuthenticated, isAdmin, setAuthToken } = useAuth();
 
   const handleLogout = () => {
-    setAuthToken(null); // Clear token from AuthContext and localStorage
-    navigate("/auth"); // Redirect to login page
+    setAuthToken(null);
+    navigate("/auth");
   };
 
   return (
