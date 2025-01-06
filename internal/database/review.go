@@ -57,3 +57,16 @@ func (db *ReviewDB) GetAllReviewsForCar(licensePlate string, page, pageSize int)
 	}
 	return reviews, emails, count, nil
 }
+
+func (db *ReviewDB) CreateReview(tripID, rating int, comment, email string) error {
+	reviewQuery := `
+		INSERT INTO Reviews (trip_id, rating, comment, created_at)
+		VALUES (?, ?, ?, NOW())
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := db.DB.ExecContext(ctx, reviewQuery, tripID, rating, comment)
+	return err
+}

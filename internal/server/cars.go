@@ -12,13 +12,13 @@ import (
 )
 
 func (srv *Server) SetupCarRoutes() {
-	carGroup := srv.FiberApp.Group("/")
+	carGroup := srv.FiberApp.Group("/details")
 
 	validate := validator.New()
 
 	_ = validate.RegisterValidation("licenseplate", validateLicensePlate)
 
-	authenticatedGroup := carGroup.Group("/cars", middleware.JWTMiddleware(srv.JWTSecret))
+	authenticatedGroup := srv.FiberApp.Group("/cars", middleware.JWTMiddleware(srv.JWTSecret))
 
 	// Get all cars
 	authenticatedGroup.Get("/", func(c *fiber.Ctx) error {
@@ -59,7 +59,8 @@ func (srv *Server) SetupCarRoutes() {
 		})
 	})
 
-	carGroup.Get("/available", func(c *fiber.Ctx) error {
+	// Get all available cars
+	srv.FiberApp.Get("/available", func(c *fiber.Ctx) error {
 		page := c.QueryInt("page", 1)
 		if page < 1 {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageNumber.Error()})
@@ -192,11 +193,7 @@ func (srv *Server) SetupCarRoutes() {
 		return c.Status(http.StatusOK).JSON(car)
 	})
 
-	authenticatedGroup.Get("/:license_plate/damages", func(c *fiber.Ctx) error {
-		_, ok := c.Locals(string(middleware.Email)).(string)
-		if !ok {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
-		}
+	carGroup.Get("/:license_plate/damages", func(c *fiber.Ctx) error {
 		licensePlate := c.Params("license_plate")
 		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
@@ -245,11 +242,7 @@ func (srv *Server) SetupCarRoutes() {
 		})
 	})
 
-	authenticatedGroup.Get("/:license_plate/services", func(c *fiber.Ctx) error {
-		_, ok := c.Locals(string(middleware.Email)).(string)
-		if !ok {
-			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
-		}
+	carGroup.Get("/:license_plate/services", func(c *fiber.Ctx) error {
 		licensePlate := c.Params("license_plate")
 		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
