@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -64,7 +65,7 @@ func (db *UserDB) GetUserDetails(email string) (models.User, error) {
 		&user.Email,
 		&user.UserName,
 		&user.FullName,
-		&user.DrivingBehaviour,
+		&user.DrivingBehavior,
 		&user.CreatedAt,
 	)
 	if err != nil {
@@ -110,6 +111,52 @@ func (db *UserDB) UpdateFullname(email, full_name string) error {
 	return nil
 }
 
+func (db *UserDB) UpdateDrivingBehavior(tx *sql.Tx, email string, drivingBehavior float64) error {
+	var currentDrivingBehavior sql.NullFloat64
+	var count int
+
+	query := `
+		SELECT u.driving_behavior, COALESCE(COUNT(t.id), 0)
+		FROM Users u
+		LEFT JOIN Trips t ON u.email = t.user_email AND t.end_time IS NOT NULL
+		WHERE u.email = ?
+		GROUP BY u.email, u.driving_behavior
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := db.DB.QueryRowContext(ctx, query, email).Scan(&currentDrivingBehavior, &count)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return ErrUserNotFound
+		}
+		log.Printf("Query error: %v", err)
+		return err
+	}
+
+	var updatedDrivingBehavior float64
+	if currentDrivingBehavior.Valid {
+		updatedDrivingBehavior = (currentDrivingBehavior.Float64*float64(count) + drivingBehavior) / float64(count+1)
+	} else {
+		updatedDrivingBehavior = drivingBehavior
+	}
+
+	updateQuery := `
+		UPDATE Users
+		SET driving_behavior = ?
+		WHERE email = ?
+	`
+
+	if tx != nil {
+		_, err := tx.ExecContext(ctx, updateQuery, updatedDrivingBehavior, email)
+		return err
+	}
+
+	_, err = db.DB.ExecContext(ctx, updateQuery, updatedDrivingBehavior, email)
+	return err
+}
+
 func (db *UserDB) CreateUser(email, username, full_name, password string) (models.User, error) {
 	var user models.User
 
@@ -134,7 +181,7 @@ func (db *UserDB) CreateUser(email, username, full_name, password string) (model
 	query := `
 		INSERT INTO
 		Users (email, username, full_name, password, driving_behavior, created_at)
-		VALUES (?, ?, ?, ?, 0.00, NOW())
+		VALUES (?, ?, ?, ?, NULL, NOW())
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

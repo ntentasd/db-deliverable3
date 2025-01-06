@@ -57,6 +57,7 @@ func main() {
 	server.SetupCarRoutes()
 	server.SetupTripRoutes()
 	server.SetupUserRoutes()
+	server.SetupReviewRoutes()
 
 	// Start server
 	log.Fatal(app.Listen(":8000"))

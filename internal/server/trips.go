@@ -182,7 +182,7 @@ func (srv *Server) SetupTripRoutes() {
 	authenticatedGroup.Post("/stop", func(c *fiber.Ctx) error {
 		var payload struct {
 			Distance        float64 `json:"distance" validate:"required,gt=0"`
-			DrivingBehavior float64 `json:"driving_behavior" validate:"required,gt=0,max=1"`
+			DrivingBehavior float64 `json:"driving_behavior" validate:"required,gt=0,max=10"`
 		}
 		email, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
@@ -225,6 +225,11 @@ func (srv *Server) SetupTripRoutes() {
 		err = srv.Database.CarDB.UpdateCarStatus(tx, car.LicensePlate, "AVAILABLE")
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update car status"})
+		}
+
+		err = srv.Database.UserDB.UpdateDrivingBehavior(tx, email, payload.DrivingBehavior)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update driving behavior"})
 		}
 
 		if err = tx.Commit(); err != nil {

@@ -122,7 +122,7 @@ func (db *CarDB) UpdateCarStatus(tx *sql.Tx, licensePlate, status string) error 
 		return err
 	}
 
-	_, err := db.DB.Exec(query, status, strings.ToUpper(licensePlate))
+	_, err := db.DB.ExecContext(ctx, query, status, strings.ToUpper(licensePlate))
 	return err
 }
 

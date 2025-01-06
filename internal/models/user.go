@@ -7,10 +7,10 @@ import (
 )
 
 type User struct {
-	Email            string    `json:"email" validate:"required,email,max=45"`
-	UserName         string    `json:"user_name" db:"username" validate:"required,max=45"`
-	FullName         string    `json:"full_name,omitempty" validate:"omitempty,max=45"`
-	Password         string    `json:"password" validate:"required,min=8,max=255"`
-	DrivingBehaviour *float64  `json:"driving_behaviour,omitempty" validate:"omitempty,min=0,max=1"`
-	CreatedAt        time.Time `json:"created_at"`
+	Email           string    `json:"email" validate:"required,email,max=45"`
+	UserName        string    `json:"user_name" db:"username" validate:"required,max=45"`
+	FullName        string    `json:"full_name,omitempty" validate:"omitempty,max=45"`
+	Password        string    `json:"password" validate:"required,min=8,max=255"`
+	DrivingBehavior *float64  `json:"driving_behavior,omitempty" validate:"omitempty,min=0,max=10"`
+	CreatedAt       time.Time `json:"created_at"`
 }
