@@ -11,8 +11,10 @@ import { capitalizeFirstLetter, formatDateTime } from "../services/formatUtils";
 import EditableField from "../components/EditableField";
 import { isAdminJWT } from "../services/authUtils";
 import { Helmet } from "react-helmet";
+import { useNavigate } from "react-router-dom";
 
 const Profile: React.FC = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -48,12 +50,18 @@ const Profile: React.FC = () => {
   }, []);
 
   const handleUpdateUsername = async (newUsername: string): Promise<UserMessage> => {
+    if (!newUsername.trim() || newUsername.length < 3) {
+      throw new Error("Username must be at least 3 characters long.");
+    }
     const response = await updateUsername(newUsername);
     setUser((prevUser) => (prevUser ? { ...prevUser, user_name: newUsername } : prevUser));
     return response;
   };
-
+  
   const handleUpdateFullname = async (newFullname: string): Promise<UserMessage> => {
+    if (!newFullname.trim() || newFullname.length < 3) {
+      throw new Error("Fullname must be at least 3 characters long.");
+    }
     const response = await updateFullname(newFullname);
     setUser((prevUser) => (prevUser ? { ...prevUser, full_name: newFullname } : prevUser));
     return response;
@@ -114,8 +122,12 @@ const Profile: React.FC = () => {
                 <span className="text-white">{user.user_name}</span>
               ) : (
                 <EditableField
-                  label=""
+                  // label="Username"
                   value={user.user_name || ""}
+                  type="text"
+                  validate={(value) =>
+                    !value.trim() || value.length < 3 ? "Username must be at least 3 characters long." : null
+                  }
                   onSave={handleUpdateUsername}
                 />
               )}
@@ -126,8 +138,12 @@ const Profile: React.FC = () => {
                 <span className="text-white">{user.full_name}</span>
               ) : (
                 <EditableField
-                  label=""
+                  // label="Fullname"
                   value={user.full_name || ""}
+                  type="text"
+                  validate={(value) =>
+                    !value.trim() || value.length < 3 ? "Fullname must be at least 3 characters long." : null
+                  }
                   onSave={handleUpdateFullname}
                 />
               )}
@@ -144,10 +160,17 @@ const Profile: React.FC = () => {
             )}
           </div>
           {!isAdmin && (
-            <div className="text-center mt-6">
+            <div className="flex justify-around text-center mt-6 w-full">
+              <button
+                onClick={() => navigate("/profile/settings")}
+                className="bg-purple-500 cursor-pointer text-white px-6 py-2 rounded-lg shadow-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-200 active:ring-offset-0"
+              >
+                Settings
+              </button>
+
               <button
                 onClick={handleDeleteAccount}
-                className="bg-red-500 text-white px-6 py-2 rounded-lg shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200 active:ring-offset-0"
+                className="bg-red-500 cursor-pointer text-white px-6 py-2 rounded-lg shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200 active:ring-offset-0"
               >
                 Delete Account
               </button>

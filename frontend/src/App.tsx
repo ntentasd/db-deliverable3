@@ -17,6 +17,7 @@ import Auth from "./pages/Auth";
 import Rents from "./pages/Rents";
 import { RefreshProvider } from "./contexts/RefreshContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Settings from "./pages/Settings";
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { isAuthenticated } = useAuth();
@@ -47,6 +48,7 @@ const App: React.FC = () => {
 
                 {/* Protected Routes */}
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/profile/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/trips" element={<ProtectedRoute><Trips /></ProtectedRoute>} />
                 <Route path="/trips/:trip_id" element={<ProtectedRoute><TripDetails /></ProtectedRoute>} />
 

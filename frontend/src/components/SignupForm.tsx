@@ -4,7 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { capitalizeFirstLetter } from "../services/formatUtils";
 import { useAuth } from "../contexts/AuthContext";
 
-const SignupForm: React.FC = () => {
+interface SignupFromProps {
+  loading: boolean;
+  setLoading: (loading: boolean) => void;
+}
+
+const SignupForm: React.FC<SignupFromProps> = ({ loading, setLoading }) => {
   const [formData, setFormData] = useState({
     email: "",
     username: "",
@@ -12,7 +17,6 @@ const SignupForm: React.FC = () => {
     password: "",
   });
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const { setAuthToken } = useAuth();
   const navigate = useNavigate();
 
@@ -22,7 +26,7 @@ const SignupForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
     setError(null);
 
     const trimmedData = Object.fromEntries(
@@ -41,7 +45,7 @@ const SignupForm: React.FC = () => {
     } catch (err: any) {
       setError(err.response?.data?.error || "An unexpected error occurred.");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -110,14 +114,14 @@ const SignupForm: React.FC = () => {
       </div>
       <button
         type="submit"
-        disabled={isLoading}
+        disabled={loading}
         className={`w-full p-3 rounded-lg font-semibold text-white transition-all duration-300 ${
-          isLoading
+          loading
             ? "bg-gray-500 cursor-not-allowed"
             : "bg-purple-500 hover:bg-purple-600"
         }`}
       >
-        {isLoading ? "Signing up..." : "Sign Up"}
+        {loading ? "Signing up..." : "Sign Up"}
       </button>
     </form>
   );

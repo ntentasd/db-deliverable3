@@ -33,18 +33,7 @@ const ActiveTripPopup: React.FC = () => {
   }, [triggerRefresh]);
 
   const handleStopTrip = async () => {
-    // try {
-    //   await stopTrip();
-    //   alert("Trip stopped successfully!");
-    //   setActiveTrip(null);
-    //   onRefresh();
-    //   triggerRefresh();
-    // } catch (err: any) {
-    //   alert(`Failed to stop trip: ${err.response?.data?.error || "Unknown error"}`);
-    // }
-
     if (activeTrip?.id) {
-      // navigate(`/trips/${activeTrip.id}`);
       navigate(`/trips/${activeTrip.id}`, { state: { showStopTripModal: true } });
     } else {
       alert("No active trip details available.");

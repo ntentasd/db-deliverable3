@@ -22,7 +22,7 @@ const api = baseApi;
 export const getServicesPaginated = async (license_plate: string, page: number, page_size: number = 3): Promise<ServiceResponse> => {
   try {
     const response = await api.get(`/cars/${license_plate}/services`, {
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       params: { page, page_size },
     });
     return response.data;

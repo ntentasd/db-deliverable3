@@ -6,6 +6,7 @@ import RentCard from "../components/RentCard";
 import { useRefresh } from "../contexts/RefreshContext";
 import { useAuth } from "../contexts/AuthContext";
 import { Helmet } from "react-helmet";
+import Loader from "../components/Loader";
 
 const Rent: React.FC = () => {
   const { triggerRefresh } = useRefresh();
@@ -78,6 +79,10 @@ const Rent: React.FC = () => {
       setCurrentPage((prev) => prev - 1);
     }
   };
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <div className="mt-6 max-w-6xl mx-auto p-4">

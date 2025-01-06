@@ -4,10 +4,14 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { capitalizeFirstLetter } from "../services/formatUtils";
 
-const LoginForm: React.FC = () => {
+interface LoginFormProps {
+  loading: boolean;
+  setLoading: (loading: boolean) => void;
+}
+
+const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const { setAuthToken } = useAuth();
   const navigate = useNavigate();
 
@@ -17,22 +21,22 @@ const LoginForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
     setError(null);
 
     try {
       const response = await login(formData.email, formData.password);
 
       if (response.token) {
-        setAuthToken(response.token); // Set token in AuthContext
-        navigate("/profile"); // Redirect to profile after login
+        setAuthToken(response.token);
+        navigate("/profile");
       } else {
         setError("Login failed. Please try again.");
       }
     } catch (err: any) {
       setError(err.response?.data?.error || "An unexpected error occurred.");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -73,14 +77,14 @@ const LoginForm: React.FC = () => {
       </div>
       <button
         type="submit"
-        disabled={isLoading}
+        disabled={loading}
         className={`w-full p-3 rounded-lg font-semibold text-white transition-all duration-300 ${
-          isLoading
+          loading
             ? "bg-gray-500 cursor-not-allowed"
             : "bg-teal-500 hover:bg-teal-600"
         }`}
       >
-        {isLoading ? "Logging in..." : "Log In"}
+        {loading ? "Logging in..." : "Log In"}
       </button>
     </form>
   );

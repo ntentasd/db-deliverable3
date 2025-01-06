@@ -3,10 +3,12 @@ import LoginForm from "../components/LoginForm";
 import SignupForm from "../components/SignupForm";
 import { Helmet } from "react-helmet";
 import { useLocation, useNavigate } from "react-router-dom";
+import Loader from "../components/Loader";
 
 const Auth: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState<boolean>(false);
   const [isSignup, setIsSignup] = useState(
     new URLSearchParams(location.search).get("mode") === "signup"
   );
@@ -21,6 +23,10 @@ const Auth: React.FC = () => {
     navigate(`/auth${newMode ? `?mode=${newMode}` : ""}`);
   };
 
+  if (loading) {
+    return <Loader />;
+  }
+
   return (
     <div className="max-w-md mx-auto mt-12 p-8 bg-gray-900 border border-gray-700 rounded-lg shadow-lg">
       <Helmet>
@@ -29,7 +35,7 @@ const Auth: React.FC = () => {
       <h2 className="text-3xl font-bold text-center text-teal-400 mb-6">
         {isSignup ? "Sign Up" : "Log In"}
       </h2>
-      {isSignup ? <SignupForm /> : <LoginForm />}
+      {isSignup ? <SignupForm loading={loading} setLoading={setLoading} /> : <LoginForm loading={loading} setLoading={setLoading} />}
       <div className="text-center mt-6">
         {isSignup ? (
           <p className="text-gray-400">

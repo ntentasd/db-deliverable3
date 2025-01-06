@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { getTripById, stopTrip, Trip } from "../services/tripsApi";
 import { FaExclamationTriangle } from "react-icons/fa";
 import { capitalizeFirstLetter } from "../services/formatUtils";
 import TripModal from "./TripModal";
+import Loader from "./Loader";
 
 const TripDetails: React.FC = () => {
   const { trip_id } = useParams<{ trip_id: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const [trip, setTrip] = useState<Trip>({
     id: 0,
     user_email: "",
@@ -19,27 +21,48 @@ const TripDetails: React.FC = () => {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [showModal, setShowModal] = useState(location.state?.showStopTripModal || false);
+  const [showModal, setShowModal] = useState(false);
+  const [stopped, setStopped] = useState<boolean>(true);
   const [distance, setDistance] = useState<string>("");
   const [drivingBehavior, setDrivingBehavior] = useState<string>("");
 
   useEffect(() => {
+    if (location.state?.showStopTripModal) {
+      setShowModal(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
+
+  useEffect(() => {
+    const MIN_LOADING_TIME = 500;
+    let loadingTimeout: number;
+
     const fetchTripDetails = async () => {
       try {
         if (!trip_id) throw new Error("Trip ID is required.");
+        
+        const startTime = Date.now(); // Track when fetch starts
         const response = await getTripById(trip_id);
+        
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(MIN_LOADING_TIME - elapsedTime, 0);
 
-        setTrip(response);
-        setError(null);
+        loadingTimeout = setTimeout(() => {
+          setTrip(response);
+          setStopped(!!response.end_time && response.end_time !== "N/A");
+          setError(null);
+          setLoading(false);
+        }, remainingTime);
       } catch (err: any) {
         console.error("Failed to fetch trip details:", err.response?.data || err.message);
         setError(err.response?.data?.error || "Failed to fetch trip details.");
-      } finally {
         setLoading(false);
       }
     };
 
     fetchTripDetails();
+
+    return () => clearTimeout(loadingTimeout);
   }, [trip_id]);
 
   const handleStopTrip = async (): Promise<string> => {
@@ -50,13 +73,14 @@ const TripDetails: React.FC = () => {
     try {
       await stopTrip(parseFloat(distance), parseFloat(drivingBehavior));
       alert("Trip stopped successfully!");
+      setStopped(true);
       setShowModal(false);
-      setTrip((prev) => ({
+      setTrip((prev) => prev && {
         ...prev,
         end_time: new Date().toISOString(),
         distance: parseFloat(distance),
         driving_behavior: parseFloat(drivingBehavior),
-      }));
+      });
       return "Trip stopped successfully!";
     } catch (err: any) {
       const response = err.response?.data?.error || "Unknown error";
@@ -65,11 +89,7 @@ const TripDetails: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-gray-400 text-lg">Loading trip details...</p>
-      </div>
-    );
+    return <Loader />;
   }
 
   if (error) {
@@ -89,10 +109,8 @@ const TripDetails: React.FC = () => {
       </div>
     );
   }
-  
 
   if (!trip) {
-    console.log(error);
     return (
       <div className="flex items-center justify-center h-screen">
         <p className="text-gray-500 text-lg">No trip details available.</p>
@@ -116,18 +134,18 @@ const TripDetails: React.FC = () => {
         </p>
         <p className="text-lg">
           <strong className="text-gray-400">End Time:</strong>{" "}
-          {trip.end_time ? (
+          {trip.end_time && trip.end_time !== "N/A" ? (
             new Date(trip.end_time).toLocaleString()
           ) : (
             <span className="text-yellow-500">Ongoing</span>
           )}
         </p>
-        {trip.distance && (
+        {trip.distance !== undefined && (
           <p className="text-lg">
             <strong className="text-gray-400">Distance:</strong> {trip.distance} km
           </p>
         )}
-        {trip.driving_behavior && (
+        {trip.driving_behavior > 0 && (
           <p className="text-lg">
             <strong className="text-gray-400">Driving Behavior:</strong>{" "}
             <span
@@ -145,14 +163,16 @@ const TripDetails: React.FC = () => {
         )}
       </div>
 
-      <div className="mt-6 flex justify-center">
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-purple-500 text-white py-2 px-6 rounded hover:bg-purple-600 transition"
-        >
-          Stop Trip
-        </button>
-      </div>
+      {!stopped && (
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-purple-500 text-white py-2 px-6 rounded hover:bg-purple-600 transition"
+          >
+            Stop Trip
+          </button>
+        </div>
+      )}
 
       {showModal && (
         <TripModal
