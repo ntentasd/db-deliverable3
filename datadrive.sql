@@ -265,7 +265,7 @@ CREATE TABLE `Trips` (
 
 LOCK TABLES `Trips` WRITE;
 /*!40000 ALTER TABLE `Trips` DISABLE KEYS */;
-INSERT INTO `Trips` VALUES (1,'moutas@gmail.com','NIG3345','2024-12-19 12:25:17','2024-12-19 12:33:43',0.99,5.30),(2,'billgates@icloud.com','XYZ5678','2023-09-19 17:31:31','2023-09-19 17:13:17',0.31,1.20),(3,'ntentas@gmail.com','ABC1234','2024-03-06 16:10:57','2024-03-06 16:29:31',0.45,6.20),(4,'ntentas@gmail.com','GHI8765','2024-08-15 10:31:32','2024-08-15 10:49:31',0.61,4.90),(5,'elonmusk@gmail.com','JKL9101','2019-03-23 21:29:07','2019-03-23 23:19:48',0.72,102.60),(6,'elonmusk@gmail.com','GHI8765','2020-01-22 13:55:39','2020-01-22 21:15:19',0.64,19.40),(7,'stevejobs@outlook.com','DEF4321','2024-12-26 11:18:24',NULL,NULL,NULL);
+INSERT INTO `Trips` VALUES (1,'moutas@gmail.com','NIG3345','2024-12-19 12:25:17','2024-12-19 12:33:43',9.9,5.30),(2,'billgates@icloud.com','XYZ5678','2023-09-19 17:31:31','2023-09-19 17:13:17',3.1,1.20),(3,'ntentas@gmail.com','ABC1234','2024-03-06 16:10:57','2024-03-06 16:29:31',4.5,6.20),(4,'ntentas@gmail.com','GHI8765','2024-08-15 10:31:32','2024-08-15 10:49:31',6.1,4.90),(5,'elonmusk@gmail.com','JKL9101','2019-03-23 21:29:07','2019-03-23 23:19:48',7.2,102.60),(6,'elonmusk@gmail.com','GHI8765','2020-01-22 13:55:39','2020-01-22 21:15:19',6.4,19.40),(7,'stevejobs@outlook.com','DEF4321','2024-12-26 11:18:24',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `Trips` ENABLE KEYS */;
 UNLOCK TABLES;
 
