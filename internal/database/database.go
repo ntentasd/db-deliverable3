@@ -11,6 +11,7 @@ type Database struct {
 	DamageDB  *DamageDB
 	ServiceDB *ServiceDB
 	TripDB    *TripDB
+	SettingDB *SettingDB
 }
 
 func InitDB(db *sql.DB) (*Database, error) {
@@ -24,5 +25,6 @@ func InitDB(db *sql.DB) (*Database, error) {
 		DamageDB:  NewDamageDB(db),
 		ServiceDB: NewServiceDB(db),
 		TripDB:    NewTripDatabase(db),
+		SettingDB: NewSettingDB(db),
 	}, nil
 }

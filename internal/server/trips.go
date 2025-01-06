@@ -56,7 +56,7 @@ func (srv *Server) SetupTripRoutes() {
 		trip, err := srv.Database.TripDB.GetTripByID(tripID, email)
 		if err != nil {
 			if err == database.ErrTripNotFound {
-				return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+				return c.Status(http.StatusForbidden).JSON(fiber.Map{"error": "forbidden"})
 			}
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}

@@ -11,6 +11,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/ntentasd/db-deliverable3/internal/database"
 	"github.com/ntentasd/db-deliverable3/internal/middleware"
+	"github.com/ntentasd/db-deliverable3/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -188,6 +189,58 @@ func (srv *Server) SetupUserRoutes() {
 		}
 
 		return c.JSON(fiber.Map{"message": "user deleted successfully"})
+	})
+
+	// -- Settings --
+	authenticatedGroup.Get("/settings", func(c *fiber.Ctx) error {
+		email, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
+
+		settings, err := srv.Database.SettingDB.GetSettings(email)
+		if err != nil {
+			if err == database.ErrSettingsNotFound {
+				return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+			}
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		return c.JSON(settings)
+	})
+
+	authenticatedGroup.Post("/settings", func(c *fiber.Ctx) error {
+		var settings models.Settings
+		email, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
+		if err := c.BodyParser(&settings); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid payload"})
+		}
+		err := srv.Database.SettingDB.CreateSettings(email, settings)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		return c.Status(http.StatusCreated).JSON(fiber.Map{"message": "settings created"})
+	})
+
+	authenticatedGroup.Put("/settings", func(c *fiber.Ctx) error {
+		var settings models.Settings
+		email, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
+		if err := c.BodyParser(&settings); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid payload"})
+		}
+		err := srv.Database.SettingDB.UpdateSetting(email, settings)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		return c.JSON(fiber.Map{"message": "settings updated"})
 	})
 }
 
