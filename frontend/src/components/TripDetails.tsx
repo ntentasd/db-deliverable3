@@ -72,7 +72,7 @@ const TripDetails: React.FC = () => {
 
     try {
       await stopTrip(parseFloat(distance), parseFloat(drivingBehavior));
-      alert("Trip stopped successfully!");
+      // alert("Trip stopped successfully!");
       setStopped(true);
       setShowModal(false);
       setTrip((prev) => prev && {
@@ -150,9 +150,9 @@ const TripDetails: React.FC = () => {
             <strong className="text-gray-400">Driving Behavior:</strong>{" "}
             <span
               className={`font-semibold ${
-                trip.driving_behavior <= 0.7
+                trip.driving_behavior <= 7
                   ? "text-green-400"
-                  : trip.driving_behavior <= 0.8
+                  : trip.driving_behavior <= 8.5
                   ? "text-orange-400"
                   : "text-red-400"
               }`}

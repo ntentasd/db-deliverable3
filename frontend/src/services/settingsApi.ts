@@ -23,10 +23,13 @@ const api = baseApi;
 
 export const getSettings = async (): Promise<UserSettings> => {
   const response = await api.get(`/user/settings`, {
-    headers: {...authHeaders(), 'Content-Type': 'application/json'}
+    headers: { ...authHeaders(), "Content-Type": "application/json" },
   });
-  return response.data;
-}
+
+  console.log("Response from backend:", response.data);
+
+  return response.data as UserSettings;
+};
 
 export const insertSettings = async (settings: UserSettings): Promise<string> => {
   console.log('Payload sent to backend:', settings);

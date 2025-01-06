@@ -21,25 +21,21 @@ const TripModal: React.FC<StopTripModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const handleConfirm = async () => {
-    // Validate distance
     const numericDistance = parseFloat(distance);
     if (isNaN(numericDistance) || numericDistance <= 0) {
       setError("Distance must be a positive number.");
       return;
     }
 
-    // Validate driving behavior
     const numericDrivingBehavior = parseFloat(drivingBehavior);
-    if (isNaN(numericDrivingBehavior) || numericDrivingBehavior < 0 || numericDrivingBehavior > 1) {
-      setError("Driving Behavior must be between 0 and 1.");
+    if (isNaN(numericDrivingBehavior) || numericDrivingBehavior < 0 || numericDrivingBehavior > 10) {
+      setError("Driving Behavior must be between 0 and 10.");
       return;
     }
 
-    // Clear error and proceed with the confirmation
     setError(null);
     const result = await onConfirm();
 
-    // Handle error from backend
     if (result !== "Trip stopped successfully!") {
       setError(result);
     }
@@ -50,8 +46,8 @@ const TripModal: React.FC<StopTripModalProps> = ({
 
     const numericValue = parseFloat(value);
 
-    if (numericValue <= 0 || numericValue >= 1) {
-      setError("Driving Behavior must be between 0 and 1.");
+    if (numericValue <= 0 || numericValue >= 10) {
+      setError("Driving Behavior must be between 0 and 10.");
     } else {
       setError(null);
     }
@@ -82,7 +78,7 @@ const TripModal: React.FC<StopTripModalProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-400">
-              Driving Behavior (0-1)
+              Driving Behavior (0-10)
             </label>
             <input
               type="number"

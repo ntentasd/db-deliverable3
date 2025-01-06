@@ -27,13 +27,16 @@ const SettingsForm: React.FC<SettingsFormProps> = ({ onSuccess }) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const target = e.target;
-    const value =
-      target.type === "checkbox"
-        ? target.checked
+    const value = 
+      target.type === "checkbox" 
+        ? target.checked 
         : target.type === "number"
         ? target.value === "" ? null : parseFloat(target.value)
         : target.value;
     const fieldName = target.name as keyof typeof formData;
+  
+    const errorMessage = validateField(fieldName, value);
+    setErrors((prev) => ({ ...prev, [fieldName]: errorMessage }));
   
     setFormData((prev) => ({
       ...prev,
@@ -44,15 +47,14 @@ const SettingsForm: React.FC<SettingsFormProps> = ({ onSuccess }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
   
-    // Remove undefined fields from the payload
     const sanitizedData: Partial<UserSettings> = Object.fromEntries(
       Object.entries(formData).filter(([_, value]) => value !== undefined)
     );
   
     try {
-      console.log("Sanitized Data:", sanitizedData); // Debug sanitized data
-      await insertSettings(sanitizedData as UserSettings); // Backend expects all fields to exist
-      onSuccess(); // Reload or show success message
+      console.log("Sanitized Data:", sanitizedData);
+      await insertSettings(sanitizedData as UserSettings);
+      onSuccess();
     } catch (error) {
       console.error("Failed to save settings:", error);
     }
@@ -72,18 +74,33 @@ const SettingsForm: React.FC<SettingsFormProps> = ({ onSuccess }) => {
 
         return (
           <div key={key}>
-            <label className="block text-sm font-medium text-gray-300 capitalize">
+            <label className="block text-sm font-medium text-gray-300 capitalize mb-1">
               {key.replace(/_/g, " ")}
             </label>
 
             {isCheckbox ? (
-              <input
-                type="checkbox"
-                name={key}
-                checked={value as boolean}
-                onChange={handleChange}
-                className="mt-1"
-              />
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  name={key}
+                  checked={value as boolean}
+                  onChange={handleChange}
+                  className="hidden"
+                  id={key}
+                />
+                <label
+                  htmlFor={key}
+                  className={`relative inline-flex items-center h-6 w-11 cursor-pointer rounded-full ${
+                    value ? "bg-teal-500" : "bg-gray-500"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 rounded-full bg-white transform transition ${
+                      value ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  ></span>
+                </label>
+              </div>
             ) : key === "drive_mode" ? (
               <select
                 name={key}

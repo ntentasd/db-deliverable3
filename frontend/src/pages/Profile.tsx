@@ -27,7 +27,7 @@ const Profile: React.FC = () => {
         email: "admin@datadrive.com",
         user_name: "Admin",
         full_name: "Admin",
-        driving_behavior: 0,
+        driving_behavior: null,
         created_at: new Date().toISOString(),
       });
       setLoading(false);
@@ -37,6 +37,7 @@ const Profile: React.FC = () => {
     const getUserDetails = async () => {
       try {
         const userData = await fetchDetails();
+        console.log(userData);
         setUser(userData);
       } catch (err) {
         console.error("Failed to fetch user details:", err);
@@ -122,13 +123,12 @@ const Profile: React.FC = () => {
                 <span className="text-white">{user.user_name}</span>
               ) : (
                 <EditableField
-                  // label="Username"
                   value={user.user_name || ""}
                   type="text"
                   validate={(value) =>
                     !value.trim() || value.length < 3 ? "Username must be at least 3 characters long." : null
                   }
-                  onSave={handleUpdateUsername}
+                  onSave={(newValue) => handleUpdateUsername(newValue as string)}
                 />
               )}
             </div>
@@ -138,13 +138,12 @@ const Profile: React.FC = () => {
                 <span className="text-white">{user.full_name}</span>
               ) : (
                 <EditableField
-                  // label="Fullname"
                   value={user.full_name || ""}
                   type="text"
                   validate={(value) =>
                     !value.trim() || value.length < 3 ? "Fullname must be at least 3 characters long." : null
                   }
-                  onSave={handleUpdateFullname}
+                  onSave={(newValue) => handleUpdateFullname(newValue as string)}
                 />
               )}
             </div>
@@ -152,6 +151,26 @@ const Profile: React.FC = () => {
               <span className="text-gray-300 font-semibold">Email:</span>
               <span className="text-white">{user.email || ""}</span>
             </div>
+            {!isAdmin && (
+              <div className="flex justify-between items-center border-b border-gray-600 pb-4">
+                <span className="text-gray-300 font-semibold">Driving Behavior:</span>
+                <span
+                  className={
+                    user.driving_behavior != null
+                      ? user.driving_behavior <= 7
+                        ? "text-green-400"
+                        : user.driving_behavior <= 8.5
+                        ? "text-orange-400"
+                        : "text-red-400"
+                      : "text-gray-400"
+                  }
+                >
+                  {user.driving_behavior != null
+                    ? user.driving_behavior.toFixed(2)
+                    : "N/A"}
+                </span>
+              </div>
+            )}
             {!isAdmin && (
               <div className="flex justify-between items-center border-b border-gray-600 pb-4">
                 <span className="text-gray-300 font-semibold">Joined:</span>

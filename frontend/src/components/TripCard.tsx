@@ -30,9 +30,9 @@ const TripCard: React.FC<TripCardProps> = ({ trip }) => {
         Driving Behavior:{" "}
         <span className={`font-semibold ${
           trip.driving_behavior != null
-            ? trip.driving_behavior <= 0.7
+            ? trip.driving_behavior <= 7
               ? "text-green-400"
-              : trip.driving_behavior <= 0.8
+              : trip.driving_behavior <= 8.5
               ? "text-orange-400"
               : "text-red-400"
             : "text-gray-400"

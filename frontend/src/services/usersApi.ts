@@ -5,7 +5,7 @@ export interface User {
   user_name: string;
   full_name: string;
   password?: string;
-  driving_behavior: number;
+  driving_behavior: number | null;
   created_at: string;
 }
 
