@@ -279,7 +279,7 @@ DROP TABLE IF EXISTS `carservicedamagesummary`;
 /*!50001 DROP VIEW IF EXISTS `carservicedamagesummary`*/;
 SET @saved_cs_client     = @@character_set_client;
 /*!50503 SET character_set_client = utf8mb4 */;
-/*!50001 CREATE VIEW `carservicedamagesummary` AS SELECT 
+/*!50001 CREATE VIEW `carservicedamagesummary` AS SELECT
  1 AS `license_plate`,
  1 AS `make`,
  1 AS `model`,
@@ -298,11 +298,14 @@ DROP TABLE IF EXISTS `usercartrip`;
 /*!50001 DROP VIEW IF EXISTS `usercartrip`*/;
 SET @saved_cs_client     = @@character_set_client;
 /*!50503 SET character_set_client = utf8mb4 */;
-/*!50001 CREATE VIEW `usercartrip` AS SELECT 
+/*!50001 CREATE VIEW `usercartrip` AS SELECT
  1 AS `trip_id`,
  1 AS `username`,
+ 1 AS `email`,
+ 1 AS `license_plate`,
  1 AS `make`,
  1 AS `model`,
+ 1 AS `cost_per_km`,
  1 AS `distance`,
  1 AS `amount`,
  1 AS `payment_method`,
@@ -438,7 +441,7 @@ UNLOCK TABLES;
 /*!50001 SET collation_connection      = utf8mb4_0900_ai_ci */;
 /*!50001 CREATE ALGORITHM=UNDEFINED */
 /*!50013 DEFINER=`root`@`%` SQL SECURITY DEFINER */
-/*!50001 VIEW `usercartrip` AS select `t`.`id` AS `trip_id`,`u`.`username` AS `username`,`c`.`make` AS `make`,`c`.`model` AS `model`,`t`.`distance` AS `distance`,`p`.`amount` AS `amount`,`p`.`payment_method` AS `payment_method`,`t`.`start_time` AS `start_time`,`t`.`end_time` AS `end_time` from (((`trips` `t` join `users` `u` on((`t`.`user_email` = `u`.`email`))) join `cars` `c` on((`t`.`car_license_plate` = `c`.`license_plate`))) left join `payments` `p` on((`t`.`id` = `p`.`trip_id`))) */;
+/*!50001 VIEW `usercartrip` AS select `t`.`id` AS `trip_id`,`u`.`username` AS `username`, `u`.email AS `email`, `c`.`license_plate` as `license_plate`,`c`.`make` AS `make`,`c`.`model` AS `model`, `c`.`cost_per_km` AS `cost_per_km`,`t`.`distance` AS `distance`,`p`.`amount` AS `amount`,`p`.`payment_method` AS `payment_method`,`t`.`start_time` AS `start_time`,`t`.`end_time` AS `end_time` from (((`trips` `t` join `users` `u` on((`t`.`user_email` = `u`.`email`))) join `cars` `c` on((`t`.`car_license_plate` = `c`.`license_plate`))) left join `payments` `p` on((`t`.`id` = `p`.`trip_id`))) */;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
