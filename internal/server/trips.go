@@ -1,6 +1,8 @@
 package server
 
 import (
+	"log"
+	"math"
 	"net/http"
 	"strings"
 
@@ -8,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/ntentasd/db-deliverable3/internal/database"
 	"github.com/ntentasd/db-deliverable3/internal/middleware"
+	"github.com/ntentasd/db-deliverable3/internal/models"
 )
 
 func (srv *Server) SetupTripRoutes() {
@@ -53,7 +56,7 @@ func (srv *Server) SetupTripRoutes() {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid trip ID"})
 		}
 
-		trip, err := srv.Database.TripDB.GetTripByID(tripID, email)
+		trip, costPerKm, err := srv.Database.TripDB.GetTripByID(tripID, email)
 		if err != nil {
 			if err == database.ErrTripNotFound {
 				return c.Status(http.StatusForbidden).JSON(fiber.Map{"error": "forbidden"})
@@ -61,7 +64,10 @@ func (srv *Server) SetupTripRoutes() {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		return c.JSON(trip)
+		return c.JSON(fiber.Map{
+			"trip":        trip,
+			"cost_per_km": costPerKm,
+		})
 	})
 
 	authenticatedGroup.Get("/", func(c *fiber.Ctx) error {
@@ -80,17 +86,13 @@ func (srv *Server) SetupTripRoutes() {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
 		}
 
-		totalTrips, err := srv.Database.TripDB.GetTotalTripCountForUser(email)
+		trips, totalTrips, err := srv.Database.TripDB.GetAllTripsForUser(email, page, pageSize)
 		if err != nil {
-			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to fetch total trips count"})
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
 		totalPages := (totalTrips + pageSize - 1) / pageSize
 
-		trips, err := srv.Database.TripDB.GetAllTripsForUser(email, page, pageSize)
-		if err != nil {
-			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-		}
 		return c.JSON(fiber.Map{
 			"data": trips,
 			"meta": fiber.Map{
@@ -181,8 +183,10 @@ func (srv *Server) SetupTripRoutes() {
 
 	authenticatedGroup.Post("/stop", func(c *fiber.Ctx) error {
 		var payload struct {
-			Distance        float64 `json:"distance" validate:"required,gt=0"`
-			DrivingBehavior float64 `json:"driving_behavior" validate:"required,gt=0,max=10"`
+			Distance        float64              `json:"distance" validate:"required,gt=0"`
+			DrivingBehavior float64              `json:"driving_behavior" validate:"required,gt=0,max=10"`
+			Amount          float64              `json:"amount" validate:"required,gt=0,max=99999999.99"`
+			PaymentMethod   models.PaymentMethod `json:"payment_method" validate:"required,oneof=SUBSCRIPTION CARD CRYPTO"`
 		}
 		email, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
@@ -196,12 +200,16 @@ func (srv *Server) SetupTripRoutes() {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": ErrValidationFailed.Error()})
 		}
 
-		car, err := srv.Database.TripDB.FindActiveTripCar(email)
+		tripID, licensePlate, costPerKm, err := srv.Database.TripDB.FindActiveTripCar(email)
 		if err != nil {
 			if err == database.ErrCarNotFound {
 				return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 			}
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		if calculateAmount(payload.Distance, costPerKm) != payload.Amount {
+			return c.Status(fiber.StatusBadRequest).SendString("inconsistent amount calculation")
 		}
 
 		tx, err := srv.Database.CarDB.DB.Begin()
@@ -222,7 +230,7 @@ func (srv *Server) SetupTripRoutes() {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		err = srv.Database.CarDB.UpdateCarStatus(tx, car.LicensePlate, "AVAILABLE")
+		err = srv.Database.CarDB.UpdateCarStatus(tx, licensePlate, "AVAILABLE")
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update car status"})
 		}
@@ -232,10 +240,20 @@ func (srv *Server) SetupTripRoutes() {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update driving behavior"})
 		}
 
+		err = srv.Database.PaymentDB.CreatePayment(tx, tripID, payload.Amount, string(payload.PaymentMethod))
+		if err != nil {
+			log.Println(err)
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to register payment"})
+		}
+
 		if err = tx.Commit(); err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"errir": "failed to commit transaction"})
 		}
 
 		return c.Status(http.StatusCreated).JSON(fiber.Map{"message": "trip ended successfully"})
 	})
+}
+
+func calculateAmount(distance float64, costPerKm float64) float64 {
+	return math.Round(distance*costPerKm*100) / 100
 }

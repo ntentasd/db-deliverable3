@@ -60,13 +60,21 @@ func (db *TripDB) GetAllTripsForCar(licensePlate string, page, pageSize int) ([]
 	return trips, nil
 }
 
-func (db *TripDB) GetAllTripsForUser(email string, page, pageSize int) ([]models.Trip, error) {
+func (db *TripDB) GetAllTripsForUser(email string, page, pageSize int) ([]models.PayloadTrip, int, error) {
 	offset := (page - 1) * pageSize
 
 	query := `
-		SELECT *
-		FROM Trips
+		SELECT t.id, t.user_email, t.car_license_plate, t.start_time, t.end_time,
+			t.driving_behavior, t.distance,
+			COALESCE(p.amount, 0) as amount,
+			COALESCE(p.payment_method, '') as payment_method,
+			COUNT(*) as trip_count
+		FROM Trips t
+		LEFT JOIN Payments p
+		ON t.id = p.trip_id
 		WHERE user_email = ?
+		GROUP BY t.id, t.user_email, t.car_license_plate, t.start_time, t.end_time,
+			t.driving_behavior, t.distance, p.amount, p.payment_method
 		LIMIT ? OFFSET ?
 	`
 
@@ -75,13 +83,15 @@ func (db *TripDB) GetAllTripsForUser(email string, page, pageSize int) ([]models
 
 	rows, err := db.DB.QueryContext(ctx, query, email, pageSize, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
-	var trips []models.Trip
+	var trips []models.PayloadTrip
+	var amount sql.NullFloat64
+	var count int
 	for rows.Next() {
-		var trip models.Trip
+		var trip models.PayloadTrip
 		if err := rows.Scan(
 			&trip.ID,
 			&trip.UserEmail,
@@ -90,13 +100,23 @@ func (db *TripDB) GetAllTripsForUser(email string, page, pageSize int) ([]models
 			&trip.EndTime,
 			&trip.DrivingBehavior,
 			&trip.Distance,
+			&amount,
+			&trip.PaymentMethod,
+			&count,
 		); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
+
+		if amount.Valid {
+			trip.Amount = amount.Float64
+		} else {
+			trip.Amount = 0
+		}
+
 		trips = append(trips, trip)
 	}
 
-	return trips, nil
+	return trips, count, nil
 }
 
 func (db *TripDB) GetActiveTrip(email string) (models.Trip, error) {
@@ -132,7 +152,7 @@ func (db *TripDB) GetActiveTrip(email string) (models.Trip, error) {
 
 func (db *TripDB) CreateTrip(tx *sql.Tx, email, licensePlate string) error {
 	query := `
-		INSERT INTO 
+		INSERT INTO
 		Trips (user_email, car_license_plate, start_time)
 		VALUES (?, ?, NOW())
 	`
@@ -171,63 +191,53 @@ func (db *TripDB) EndTrip(tx *sql.Tx, email string, distance, driving_behavior f
 	return err
 }
 
-func (db *TripDB) FindActiveTripCar(email string) (models.Car, error) {
-	query1 := `
-		SELECT car_license_plate
-		FROM Trips
-		WHERE user_email = ? AND end_time IS NULL
-	`
-
-	query2 := `
-		SELECT *
-		FROM Cars
-		WHERE license_plate = ?
+func (db *TripDB) FindActiveTripCar(email string) (int, string, float64, error) {
+	query := `
+		SELECT trip_id, license_plate, cost_per_km
+		FROM UserCarTrip
+		WHERE email = ?
+		AND end_time IS NULL
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	var car models.Car
+	var tripID int
 	var licensePlate string
-
-	err := db.DB.QueryRowContext(ctx, query1, email).Scan(&licensePlate)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return models.Car{}, ErrCarNotFound
-		}
-		return models.Car{}, err
-	}
-
-	err = db.DB.QueryRowContext(ctx, query2, licensePlate).Scan(
-		&car.LicensePlate,
-		&car.Make,
-		&car.Model,
-		&car.Status,
-		&car.CostPerKm,
-		&car.Location,
+	var costPerKm float64
+	err := db.DB.QueryRowContext(ctx, query, email).Scan(
+		&tripID,
+		&licensePlate,
+		&costPerKm,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.Car{}, ErrCarNotFound
+			return 0, "", 0, ErrCarNotFound
 		}
-		return models.Car{}, err
+		return 0, "", 0, err
 	}
 
-	return car, nil
+	return tripID, licensePlate, costPerKm, nil
 }
 
-func (db *TripDB) GetTripByID(id, email string) (models.Trip, error) {
+func (db *TripDB) GetTripByID(id, email string) (models.Trip, float64, error) {
 	query := `
-			SELECT id, user_email, car_license_plate, start_time, end_time, driving_behavior, distance
-			FROM Trips
-			WHERE id = ?
-			AND user_email = ?
+			SELECT t.id, t.user_email, t.car_license_plate, t.start_time,
+				t.end_time, t.driving_behavior, t.distance, c.cost_per_km
+			FROM Trips t
+			LEFT JOIN Cars c
+			ON t.car_license_plate = c.license_plate
+			WHERE t.id = ?
+			AND t.user_email = ?
+			GROUP BY t.id, t.user_email, t.car_license_plate, t.start_time,
+				t.end_time, t.driving_behavior, t.distance, c.cost_per_km
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	var trip models.Trip
+	var costPerKm float64
 	err := db.DB.QueryRowContext(ctx, query, id, email).Scan(
 		&trip.ID,
 		&trip.UserEmail,
@@ -236,15 +246,16 @@ func (db *TripDB) GetTripByID(id, email string) (models.Trip, error) {
 		&trip.EndTime,
 		&trip.DrivingBehavior,
 		&trip.Distance,
+		&costPerKm,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.Trip{}, ErrTripNotFound
+			return models.Trip{}, 0, ErrTripNotFound
 		}
-		return models.Trip{}, err
+		return models.Trip{}, 0, err
 	}
 
-	return trip, nil
+	return trip, costPerKm, nil
 }
 
 func (db *TripDB) GetTotalTripCountForUser(email string) (int, error) {
