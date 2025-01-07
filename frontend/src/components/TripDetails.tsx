@@ -18,6 +18,8 @@ const TripDetails: React.FC = () => {
     end_time: "N/A",
     distance: 0,
     driving_behavior: 0,
+    amount: 0,
+    payment_method: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -26,6 +28,9 @@ const TripDetails: React.FC = () => {
   const [stopped, setStopped] = useState<boolean>(true);
   const [distance, setDistance] = useState<string>("");
   const [drivingBehavior, setDrivingBehavior] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [costPerKm, setCostPerKm] = useState<number>(0);
+  const [amount, setAmount] = useState<number>(0);
 
   useEffect(() => {
     if (location.state?.showStopTripModal) {
@@ -39,8 +44,9 @@ const TripDetails: React.FC = () => {
       try {
         if (!trip_id) throw new Error("Trip ID is required.");
         const response = await getTripById(trip_id);
-        setTrip(response);
-        setStopped(!!response.end_time && response.end_time !== "N/A");
+        setTrip(response.trip);
+        setCostPerKm(response.cost_per_km);
+        setStopped(!!response.trip.end_time && response.trip.end_time !== "N/A");
         setError(null);
         setLoading(false);
       } catch (err: any) {
@@ -53,13 +59,22 @@ const TripDetails: React.FC = () => {
     fetchTripDetails();
   }, [trip_id]);
 
+  useEffect(() => {
+    const numericDistance = parseFloat(distance);
+    if (!isNaN(numericDistance) && numericDistance > 0) {
+      setAmount(parseFloat((numericDistance * costPerKm).toFixed(2)));
+    } else {
+      setAmount(0);
+    }
+  }, [distance, costPerKm]);
+
   const handleStopTrip = async (): Promise<string> => {
-    if (!distance.trim() || !drivingBehavior.trim()) {
-      return "Please fill in both Distance and Driving Behavior.";
+    if (!distance.trim() || !drivingBehavior.trim() || !paymentMethod) {
+      return "Please fill in all fields and select a payment method.";
     }
 
     try {
-      await stopTrip(parseFloat(distance), parseFloat(drivingBehavior));
+      await stopTrip(parseFloat(distance), parseFloat(drivingBehavior), paymentMethod.toUpperCase(), amount);
       setStopped(true);
       setShowTripModal(false);
       setTrip((prev) => ({
@@ -67,6 +82,8 @@ const TripDetails: React.FC = () => {
         end_time: new Date().toISOString(),
         distance: parseFloat(distance),
         driving_behavior: parseFloat(drivingBehavior),
+        amount,
+        payment_method: paymentMethod,
       }));
       setShowReviewModal(true);
       return "Trip stopped successfully!";
@@ -120,11 +137,7 @@ const TripDetails: React.FC = () => {
         <p className="text-lg">
           <strong className="text-gray-400">Distance:</strong>{" "}
           {trip.distance !== undefined && trip.distance !== null ? (
-            <span
-              className=""
-            >
-              {trip.distance.toFixed(2)} km
-            </span>
+            <span>{trip.distance.toFixed(2)} km</span>
           ) : (
             <span className="text-gray-400">Not available</span>
           )}
@@ -147,6 +160,10 @@ const TripDetails: React.FC = () => {
             <span className="text-gray-400">Not available</span>
           )}
         </p>
+        <p className="text-lg">
+          <strong className="text-gray-400">Amount:</strong>{" "}
+          <span>{amount.toFixed(2)} $</span>
+        </p>
       </div>
 
       {!stopped && (
@@ -166,6 +183,8 @@ const TripDetails: React.FC = () => {
           setDistance={setDistance}
           drivingBehavior={drivingBehavior}
           setDrivingBehavior={setDrivingBehavior}
+          paymentMethod={paymentMethod}
+          setPaymentMethod={setPaymentMethod}
           onConfirm={handleStopTrip}
           onCancel={() => setShowTripModal(false)}
         />

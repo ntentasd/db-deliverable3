@@ -8,11 +8,18 @@ export interface Trip {
   end_time: string | null;
   distance?: number;
   driving_behavior: number;
+  amount: number | null;
+  payment_method: string | null;
 }
 
 interface TripResponse {
   data: Trip[];
   meta: Metadata;
+}
+
+export interface TripCost {
+  trip: Trip;
+  cost_per_km: number;
 }
 
 const api = baseApi;
@@ -47,16 +54,16 @@ export const startTrip = async (license_plate: string): Promise<any> => {
   return response.data;
 };
 
-export const stopTrip = async (distance: number, driving_behavior: number): Promise<any> => {
+export const stopTrip = async (distance: number, driving_behavior: number, payment_method: string, amount: number): Promise<any> => {
   const response = await api.post(
     `/trips/stop`,
-    { distance, driving_behavior },
+    { distance, driving_behavior, payment_method, amount },
     { headers: { ...authHeaders(), "Content-Type": "application/json" } }
   );
   return response.data;
 };
 
-export const getTripById = async (trip_id: string): Promise<Trip> => {
+export const getTripById = async (trip_id: string): Promise<TripCost> => {
   const response = await api.get(
     `/trips/details/${trip_id}`,
     { headers: { ...authHeaders(), 'Content-Type': 'application/json' } }
