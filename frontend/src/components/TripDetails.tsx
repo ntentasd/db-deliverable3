@@ -5,6 +5,8 @@ import ReviewModal from "./ReviewModal";
 import TripModal from "./TripModal";
 import Loader from "./Loader";
 import { createReview } from "../services/reviewsApi";
+import { getActiveSubscription, UserSubscription } from "../services/subscriptionsUtils";
+import ErrorMessage from "./ErrorMessage";
 
 const TripDetails: React.FC = () => {
   const { trip_id } = useParams<{ trip_id: string }>();
@@ -21,6 +23,7 @@ const TripDetails: React.FC = () => {
     amount: 0,
     payment_method: "",
   });
+  const [activeSubscription, setActiveSubscription] = useState<UserSubscription | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [showTripModal, setShowTripModal] = useState(false);
@@ -56,7 +59,18 @@ const TripDetails: React.FC = () => {
       }
     };
 
+    const fetchActiveSubscription = async () => {
+      try {
+        const activeSub = await getActiveSubscription();
+        setActiveSubscription(activeSub);
+        setPaymentMethod("SUBSCRIPTION");
+      } catch {
+        setActiveSubscription(null);
+      }
+    };
+
     fetchTripDetails();
+    fetchActiveSubscription();
   }, [trip_id]);
 
   useEffect(() => {
@@ -69,7 +83,7 @@ const TripDetails: React.FC = () => {
   }, [distance, costPerKm]);
 
   const handleStopTrip = async (): Promise<string> => {
-    if (!distance.trim() || !drivingBehavior.trim() || !paymentMethod) {
+    if (!distance.trim() || !drivingBehavior.trim() || (!paymentMethod && !activeSubscription)) {
       return "Please fill in all fields and select a payment method.";
     }
 
@@ -106,11 +120,7 @@ const TripDetails: React.FC = () => {
   if (loading) return <Loader />;
 
   if (error) {
-    return (
-      <div className="text-center text-red-500">
-        <p>{error}</p>
-      </div>
-    );
+    return <ErrorMessage error={error} onRetry={() => window.location.reload()} />;
   }
 
   return (
@@ -187,6 +197,7 @@ const TripDetails: React.FC = () => {
           setPaymentMethod={setPaymentMethod}
           onConfirm={handleStopTrip}
           onCancel={() => setShowTripModal(false)}
+          hasActiveSubscription={!!activeSubscription}
         />
       )}
 

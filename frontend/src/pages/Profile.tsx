@@ -12,6 +12,7 @@ import EditableField from "../components/EditableField";
 import { isAdminJWT } from "../services/authUtils";
 import { Helmet } from "react-helmet";
 import { useNavigate } from "react-router-dom";
+import ErrorMessage from "../components/ErrorMessage";
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -97,11 +98,7 @@ const Profile: React.FC = () => {
   }
 
   if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-red-500">
-        <p className="text-lg">{error}</p>
-      </div>
-    );
+    return <ErrorMessage error={error} onRetry={() => window.location.reload()} />;
   }
 
   const username = user?.user_name || "";

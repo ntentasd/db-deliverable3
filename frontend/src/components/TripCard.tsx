@@ -58,12 +58,16 @@ const TripCard: React.FC<TripCardProps> = ({ trip }) => {
         </div>
       </div>
       <div className="flex flex-col items-end justify-between">
-        <div className="text-sm text-gray-300">
-          <span className="font-semibold text-gray-100">Amount:</span>{" "}
-          <span className="text-yellow-300 font-bold">
-            {trip.amount != null ? `${trip.amount.toFixed(2)} $` : `N/A`}
-          </span>
-        </div>
+        {trip.payment_method != "SUBSCRIPTION" ? (
+          <div className="text-sm text-gray-300">
+            <span className="font-semibold text-gray-100">Amount:</span>{" "}
+            <span className="text-yellow-300 font-bold">
+              {trip.amount != null ? `${trip.amount.toFixed(2)} $` : `N/A`}
+            </span>
+          </div>
+        ) : (
+          <div />
+        )}
         <div className="flex items-center mt-2">
           {trip.payment_method ? getPaymentIcon(trip.payment_method) : null}
           <span className="ml-2 text-gray-100 font-medium capitalize">

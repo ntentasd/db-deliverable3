@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getTripsPaginated, Trip } from "../services/tripsApi";
+import { getTrips, Trip } from "../services/tripsApi";
 import TripCard from "./TripCard";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 
@@ -16,7 +16,7 @@ const TripList: React.FC = () => {
     try {
       setLoading(true);
       const [data] = await Promise.all([
-        getTripsPaginated(page, 5),
+        getTrips(page, 5),
         delay(500),
       ]);
       setTrips(data.data || []);

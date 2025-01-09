@@ -3,25 +3,16 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getCarByLicensePlate, updateCar } from "../services/carsApi";
 import { Helmet } from "react-helmet";
 
-interface Car {
-  license_plate: string;
-  make: string;
-  model: string;
-  status: string;
-  cost_per_km: number;
-  location: string;
-}
-
 const EditCar: React.FC = () => {
   const { license_plate } = useParams<{ license_plate: string }>();
   const navigate = useNavigate();
 
-  const [car, setCar] = useState<Car>({
+  const [formData, setFormData] = useState({
     license_plate: "",
     make: "",
     model: "",
-    status: "",
-    cost_per_km: 0,
+    status: "AVAILABLE",
+    costPerKm: "",
     location: "",
   });
 
@@ -32,10 +23,17 @@ const EditCar: React.FC = () => {
     const fetchCar = async () => {
       try {
         const carData = await getCarByLicensePlate(license_plate!);
-        setCar(carData);
+        setFormData({
+          license_plate: carData.license_plate,
+          make: carData.make,
+          model: carData.model,
+          status: carData.status,
+          costPerKm: carData.cost_per_km.toString(),
+          location: carData.location,
+        });
         setLoading(false);
       } catch (err: any) {
-        setError("Failed to load car data");
+        setError("Failed to load car data.");
         setLoading(false);
       }
     };
@@ -45,58 +43,81 @@ const EditCar: React.FC = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setCar({ ...car, [name]: name === "cost_per_km" ? parseFloat(value) : value });
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await updateCar(car);
+      const updatedCar = {
+        license_plate: formData.license_plate,
+        make: formData.make,
+        model: formData.model,
+        status: formData.status,
+        cost_per_km: parseFloat(formData.costPerKm.replace(",", ".")),
+        location: formData.location,
+      };
+
+      await updateCar(updatedCar);
+      alert("Car updated successfully!");
       navigate("/cars");
     } catch (err: any) {
-      setError("Failed to update car");
+      setError("Failed to update car.");
     }
   };
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
+  if (loading) return <p className="text-center text-teal-400 mt-6">Loading...</p>;
+  if (error) return <p className="text-center text-red-500 mt-6">{error}</p>;
 
   return (
-    <div className="max-w-2xl mx-auto mt-8 p-4 border rounded-lg shadow-lg bg-white">
+    <div className="max-w-2xl mx-auto mt-8 p-6 bg-gray-800 rounded-lg shadow-md">
       <Helmet>
-        <title>DataDrive - Edit {car.license_plate}</title>
+        <title>DataDrive - Edit {formData.license_plate}</title>
       </Helmet>
-      <h2 className="text-xl font-bold mb-4">Edit Car</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <h2 className="text-2xl font-bold text-teal-400 mb-6">Edit Car</h2>
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium">Make</label>
+          <label className="block text-sm font-medium text-gray-300">
+            License Plate
+          </label>
+          <input
+            type="text"
+            name="license_plate"
+            value={formData.license_plate}
+            onChange={handleChange}
+            className="w-full p-2 mt-1 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+            disabled
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-300">Make</label>
           <input
             type="text"
             name="make"
-            value={car.make}
+            value={formData.make}
             onChange={handleChange}
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 mt-1 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium">Model</label>
+          <label className="block text-sm font-medium text-gray-300">Model</label>
           <input
             type="text"
             name="model"
-            value={car.model}
+            value={formData.model}
             onChange={handleChange}
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 mt-1 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium">Status</label>
+          <label className="block text-sm font-medium text-gray-300">Status</label>
           <select
             name="status"
-            value={car.status}
+            value={formData.status}
             onChange={handleChange}
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 mt-1 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             required
           >
             <option value="AVAILABLE">Available</option>
@@ -105,36 +126,37 @@ const EditCar: React.FC = () => {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium">Cost Per KM</label>
+          <label className="block text-sm font-medium text-gray-300">
+            Cost Per KM
+          </label>
           <input
-            type="number"
-            step="0.01"
-            name="cost_per_km"
-            value={car.cost_per_km}
+            type="text"
+            name="costPerKm"
+            value={formData.costPerKm}
             onChange={handleChange}
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 mt-1 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             required
           />
         </div>
         <div>
-          <label className="block text-sm font-medium">Location</label>
+          <label className="block text-sm font-medium text-gray-300">
+            Location
+          </label>
           <input
             type="text"
             name="location"
-            value={car.location}
+            value={formData.location}
             onChange={handleChange}
-            className="w-full p-2 border rounded-md"
+            className="w-full p-2 mt-1 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             required
           />
         </div>
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-          >
-            Save Changes
-          </button>
-        </div>
+        <button
+          type="submit"
+          className="w-full bg-teal-500 text-white py-2 rounded hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
+        >
+          Save Changes
+        </button>
       </form>
     </div>
   );

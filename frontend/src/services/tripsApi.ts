@@ -24,11 +24,6 @@ export interface TripCost {
 
 const api = baseApi;
 
-export const getTrips = async (): Promise<Trip[]> => {
-  const response = await api.get(`/trips`, { headers: authHeaders() });
-  return response.data;
-};
-
 export const getActiveTrip = async (): Promise<Trip> => {
   const response = await api.get(
     `/trips/active`,
@@ -37,7 +32,7 @@ export const getActiveTrip = async (): Promise<Trip> => {
   return response.data;
 }
 
-export const getTripsPaginated = async (page: number, page_size: number = 5): Promise<TripResponse> => {
+export const getTrips = async (page: number, page_size: number = 5): Promise<TripResponse> => {
   const response = await api.get(`/trips`, {
     params: { page, page_size },
     headers: authHeaders(),

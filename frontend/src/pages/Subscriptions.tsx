@@ -89,7 +89,7 @@ const Subscriptions: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto mt-10 p-6 bg-gray-800 text-gray-200 rounded-lg shadow-lg">
-      <h1 className="text-3xl font-bold text-teal-400 mb-6">Manage Subscriptions</h1>
+      <h1 className="text-3xl font-bold text-teal-400 mb-12">Manage Subscriptions</h1>
       {message && <p className="text-green-400 mb-4">{capitalizeFirstLetter(message)}</p>}
 
       {/* Active Subscription Section */}
@@ -119,31 +119,36 @@ const Subscriptions: React.FC = () => {
       <h2 className="text-2xl font-bold text-teal-400 mb-4">Available Subscriptions</h2>
       <div className="space-y-4">
         {subscriptions.map((subscription) => {
+          const isAnyActive = !!activeSubscription;
           const isActive = activeSubscription?.subscription_name === subscription.name;
 
           return (
             <div
               key={subscription.name}
-              className={`p-4 rounded-lg shadow-md border ${
+              className={`p-4 rounded-lg shadow-md border flex ${
                 isActive ? "border-purple-500" : "border-gray-700"
               } bg-gray-700 hover:shadow-lg transition`}
             >
-              <h2 className="text-xl font-semibold text-teal-300">{subscription.name}</h2>
-              <p className="text-gray-300 mt-2">{subscription.description}</p>
-              <p className="text-purple-400 font-bold mt-2">
-                ${subscription.price_per_month} per month
-              </p>
-              <button
-                onClick={() => handleBuySubscription(subscription.name)}
-                disabled={isActive}
-                className={`mt-4 py-2 px-6 rounded transition ${
-                  isActive
-                    ? "bg-gray-500 text-gray-300 cursor-not-allowed opacity-50"
-                    : "bg-purple-500 text-white hover:bg-purple-600"
-                }`}
-              >
-                {isActive ? "Active Subscription" : "Buy Subscription"}
-              </button>
+              <div className="flex flex-col">
+                <h2 className="text-xl font-semibold text-teal-300">{subscription.name}</h2>
+                <p className="text-gray-300 mt-2">{subscription.description}</p>
+                <p className="text-purple-400 font-bold mt-2">
+                  ${subscription.price_per_month} per month
+                </p>
+              </div>
+              <div className="w-full flex justify-end items-center">
+                <button
+                  onClick={() => handleBuySubscription(subscription.name)}
+                  disabled={isAnyActive}
+                  className={`mt-4 py-2 px-4 rounded-md transition h-1/2 ${
+                    isAnyActive
+                      ? "bg-gray-500 text-gray-300 cursor-not-allowed opacity-50"
+                      : "bg-purple-500 text-white hover:bg-purple-600"
+                  }`}
+                >
+                  {isActive ? "Active Subscription" : "Buy Subscription"}
+                </button>
+              </div>
             </div>
           );
         })}

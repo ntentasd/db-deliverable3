@@ -16,7 +16,7 @@ const Home: React.FC = () => {
           Welcome to DataDrive
         </h1>
         <p className="text-gray-300 text-lg mb-8">
-          Your ultimate solution for car management. Rent, track, and manage your fleet seamlessly.
+          Streamline your car rental experience. Profile vehicles, track trips, and connect through user feedback.
         </p>
 
         {/* Dynamic Buttons */}
@@ -29,6 +29,14 @@ const Home: React.FC = () => {
                   className="bg-teal-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-teal-600 transition-colors duration-300"
                 >
                   Manage Cars
+                </Link>
+              )}
+              {!isAdmin && (
+                <Link
+                  to="/rent"
+                  className="bg-teal-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-teal-600 transition-colors duration-300"
+                >
+                  Rent a Car
                 </Link>
               )}
               <Link
@@ -65,23 +73,24 @@ const Home: React.FC = () => {
         {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <div className="bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-            <h2 className="text-xl font-bold text-teal-400 mb-4">Car Management</h2>
+            <h2 className="text-xl font-bold text-teal-400 mb-4">Vehicle Profiling</h2>
             <p className="text-gray-300">
-              {isAdmin
-                ? "Add, edit, or delete cars from your fleet. Monitor availability and maintenance status."
-                : "Admins manage the fleet to ensure smooth operation and availability."}
+              Find the ideal car to rent, and it will adjust to your preferences.
             </p>
           </div>
+
           <div className="bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
             <h2 className="text-xl font-bold text-teal-400 mb-4">Trip Tracking</h2>
             <p className="text-gray-300">
-              View detailed trip histories, including costs, distances, and user feedback.
+              Monitor trip histories with detailed information on routes, durations, and trip costs.
             </p>
           </div>
+
           <div className="bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
             <h2 className="text-xl font-bold text-teal-400 mb-4">User Feedback</h2>
             <p className="text-gray-300">
-              Collect and analyze user feedback to improve services and ensure customer satisfaction.
+              Gain and leave valuable insight helping the community grow.<br />
+              Your feedback matters!
             </p>
           </div>
         </div>

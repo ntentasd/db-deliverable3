@@ -16,12 +16,7 @@ interface CarResponse {
 
 const api = baseApi;
 
-export const getAllCars = async () => {
-  const response = await api.get("/cars");
-  return response.data;
-};
-
-export const getAllCarsPaginated = async (page: number, page_size: number = 5): Promise<CarResponse> => {
+export const getAllCars = async (page: number, page_size: number = 5): Promise<CarResponse> => {
   const response = await api.get(`/cars`, {
     params: { page, page_size },
     headers: { ...authHeaders(), 'Content-Type': 'application/json' },
@@ -30,10 +25,26 @@ export const getAllCarsPaginated = async (page: number, page_size: number = 5): 
 }
 
 export const getAvailableCars = async (page: number, page_size: number = 5): Promise<CarResponse> => {
-  const response = await api.get(
-    `/available`,
-    { params: { page, page_size } },
-  );
+  const response = await api.get(`/available`, {
+    params: { page, page_size },
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return response.data;
+}
+
+export const getRentedCars = async (page: number, page_size: number = 5): Promise<CarResponse> => {
+  const response = await api.get(`/cars/rented`, {
+    params: { page, page_size },
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+  });
+  return response.data;
+}
+
+export const getMaintenanceCars = async (page: number, page_size: number = 5): Promise<CarResponse> => {
+  const response = await api.get(`/cars/maintenance`, {
+    params: { page, page_size },
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+  });
   return response.data;
 }
 

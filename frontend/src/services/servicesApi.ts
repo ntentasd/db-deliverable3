@@ -1,5 +1,6 @@
-import { baseApi, Metadata } from "./api";
+import { authHeaders, baseApi, Metadata } from "./api";
 import { Car } from "./carsApi";
+import { MessageResponse } from "./reviewsApi";
 
 export interface Service {
   id: number;
@@ -30,4 +31,12 @@ export const getServicesPaginated = async (license_plate: string, page: number, 
     console.error("Error in getServicesPaginated:", err.response || err.message);
     throw new Error(err.response?.data?.error || "Failed to fetch services.");
   }
+}
+
+export const addService = async (license_plate: string, service_date: string, description: string, service_cost: number): Promise<MessageResponse> => {
+  const response = await api.post(`/cars/services`,
+    { license_plate, service_date, description, service_cost },
+    { headers: { ...authHeaders(), 'Content-Type': 'application/json' } },
+  );
+  return response.data;
 }

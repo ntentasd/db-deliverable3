@@ -11,6 +11,7 @@ interface StopTripModalProps {
   setPaymentMethod: (value: string) => void;
   onConfirm: () => Promise<string>;
   onCancel: () => void;
+  hasActiveSubscription: boolean;
 }
 
 const TripModal: React.FC<StopTripModalProps> = ({
@@ -22,6 +23,7 @@ const TripModal: React.FC<StopTripModalProps> = ({
   setPaymentMethod,
   onConfirm,
   onCancel,
+  hasActiveSubscription,
 }) => {
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +40,7 @@ const TripModal: React.FC<StopTripModalProps> = ({
       return;
     }
 
-    if (!paymentMethod) {
+    if (!paymentMethod && !hasActiveSubscription) {
       setError("Please select a payment method.");
       return;
     }
@@ -87,33 +89,35 @@ const TripModal: React.FC<StopTripModalProps> = ({
               className="w-full p-2 rounded bg-gray-700 text-gray-200 focus:outline-double focus:outline-purple-400"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-400">
-              Payment Method
-            </label>
-            <div className="flex space-x-4 mt-2">
-              <button
-                onClick={() => setPaymentMethod("CARD")}
-                className={`py-2 px-4 rounded flex items-center justify-center ${
-                  paymentMethod === "CARD"
-                    ? "bg-teal-700 text-white"
-                    : "bg-gray-700 text-gray-200 hover:bg-gray-600"
-                } transition`}
-              >
-                <FaCreditCard className="w-6 h-6 text-blue-400" />
-              </button>
-              <button
-                onClick={() => setPaymentMethod("CRYPTO")}
-                className={`py-2 px-4 rounded flex items-center justify-center ${
-                  paymentMethod === "CRYPTO"
-                    ? "bg-teal-700 text-white"
-                    : "bg-gray-700 text-gray-200 hover:bg-gray-600"
-                } transition`}
-              >
-                <FaBitcoin className="w-6 h-6 text-yellow-500" />
-              </button>
+          {!hasActiveSubscription && (
+            <div>
+              <label className="block text-sm font-medium text-gray-400">
+                Payment Method
+              </label>
+              <div className="flex space-x-4 mt-2">
+                <button
+                  onClick={() => setPaymentMethod("CARD")}
+                  className={`py-2 px-4 rounded flex items-center justify-center ${
+                    paymentMethod === "CARD"
+                      ? "bg-teal-700 text-white"
+                      : "bg-gray-700 text-gray-200 hover:bg-gray-600"
+                  } transition`}
+                >
+                  <FaCreditCard className="w-6 h-6 text-blue-400" />
+                </button>
+                <button
+                  onClick={() => setPaymentMethod("CRYPTO")}
+                  className={`py-2 px-4 rounded flex items-center justify-center ${
+                    paymentMethod === "CRYPTO"
+                      ? "bg-teal-700 text-white"
+                      : "bg-gray-700 text-gray-200 hover:bg-gray-600"
+                  } transition`}
+                >
+                  <FaBitcoin className="w-6 h-6 text-yellow-500" />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
           {error && (
             <p className="text-red-400 text-sm mt-2">{capitalizeFirstLetter(error)}</p>
           )}

@@ -1,7 +1,15 @@
 export const formatDateTime = (dateTime: string | null): string => {
   if (!dateTime) return "Ongoing";
   const date = new Date(dateTime);
-  return isNaN(date.getTime()) ? "Invalid Date" : date.toLocaleString();
+  if (isNaN(date.getTime())) return "Invalid Date";
+
+  return date.toLocaleString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 };
 
 export const formatPlaceholder = (value: number | null | undefined, unit?: string): string => {

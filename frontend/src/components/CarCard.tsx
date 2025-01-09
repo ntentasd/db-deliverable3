@@ -31,7 +31,7 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
 
   return (
     <li
-      className="flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow hover:shadow-lg hover:bg-gray-700 transition"
+      className="h-[170px] flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow hover:shadow-lg hover:bg-gray-700 transition"
       onClick={() => navigate(`/cars/${car.license_plate}`)}
     >
       {/* Car Details */}

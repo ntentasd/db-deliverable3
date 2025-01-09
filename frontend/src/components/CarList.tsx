@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Car, getAllCarsPaginated } from "../services/carsApi";
+import { Car, getAllCars, getAvailableCars, getRentedCars, getMaintenanceCars } from "../services/carsApi";
 import CarCard from "./CarCard";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
+import ErrorMessage from "./ErrorMessage";
 
 interface CarListProps {
   setOnInsertHandler: (handler: () => void) => void;
@@ -12,30 +13,52 @@ const CarList: React.FC<CarListProps> = ({ setOnInsertHandler }) => {
   const [cars, setCars] = useState<Car[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCars = useCallback(async (page: number) => {
+  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const fetchCars = useCallback(async (page: number, filter: string) => {
+    setLoading(true);
     try {
-      const data = await getAllCarsPaginated(page, 5);
+      let data;
+      await delay(500);
+      switch (filter) {
+        case "AVAILABLE":
+          data = await getAvailableCars(page, 5);
+          break;
+        case "RENTED":
+          data = await getRentedCars(page, 5);
+          break;
+        case "MAINTENANCE":
+          data = await getMaintenanceCars(page, 5);
+          break;
+        default:
+          data = await getAllCars(page, 5);
+      }
       setCars(data.data);
       setCurrentPage(data.meta.current_page);
       setTotalPages(data.meta.total_pages);
+      setError(null);
     } catch (err: any) {
       setError(err.message || "Failed to fetch cars.");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   const handleInsert = useCallback(() => {
-    fetchCars(currentPage);
-  }, [fetchCars, currentPage]);
+    fetchCars(currentPage, filter);
+  }, [fetchCars, currentPage, filter]);
 
   useEffect(() => {
-    fetchCars(currentPage);
+    fetchCars(currentPage, filter);
     setOnInsertHandler(handleInsert);
-  }, [fetchCars, currentPage, handleInsert, setOnInsertHandler]);
+  }, [fetchCars, currentPage, filter, handleInsert, setOnInsertHandler]);
 
   const handleFilterChange = (status: string) => {
     setFilter(status);
+    setCurrentPage(1);
   };
 
   const handleNextPage = () => {
@@ -50,10 +73,21 @@ const CarList: React.FC<CarListProps> = ({ setOnInsertHandler }) => {
     }
   };
 
-  const filteredCars = filter === "All" ? cars : cars.filter((car) => car.status === filter);
+  const renderSkeletons = () =>
+    Array.from({ length: 5 }).map((_, index) => (
+      <div
+        key={`skeleton-card-${index}`}
+        className="h-[170px] border border-gray-700 rounded-lg p-4 bg-gray-800 animate-pulse"
+      >
+        <div className="h-5 w-1/6 bg-gray-600 rounded mb-4 mt-3"></div>
+        <div className="h-3 w-1/5 bg-gray-700 rounded mb-5"></div>
+        <div className="h-3 w-[11%] bg-gray-700 rounded mb-5"></div>
+        <div className="h-3 w-[14%] bg-gray-700 rounded"></div>
+      </div>
+    ));
 
   if (error) {
-    return <div className="text-red-500 text-center mt-6">{error}</div>;
+    return <ErrorMessage error={error} onRetry={() => window.location.reload()} />;
   }
 
   return (
@@ -77,13 +111,25 @@ const CarList: React.FC<CarListProps> = ({ setOnInsertHandler }) => {
 
       {/* Car List */}
       <ul className="space-y-4">
-        {filteredCars.map((car) => (
-          <CarCard key={car.license_plate} car={car} />
-        ))}
+        {loading ? (
+          renderSkeletons()
+        ) : (
+          Array.from({ length: 5 }).map((_, index) => {
+            if (index < cars.length) {
+              return <CarCard key={cars[index].license_plate} car={cars[index]} />;
+            }
+            return (
+              <div
+                key={`placeholder-card-${index}`}
+                className="h-[200px] border border-gray-700 rounded-lg p-4 bg-gray-800"
+              />
+            );
+          })
+        )}
       </ul>
 
       {/* Pagination Controls */}
-      {filteredCars.length > 0 && (
+      {cars.length > 0 && (
         <div className="flex justify-between items-center mt-6">
           <button
             onClick={handlePreviousPage}
