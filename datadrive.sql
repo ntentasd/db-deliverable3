@@ -54,7 +54,7 @@ DROP TABLE IF EXISTS `Damages`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Damages` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `car_license_plate` varchar(7) NOT NULL,
   `reported_date` date NOT NULL,
   `description` mediumtext,
@@ -164,7 +164,7 @@ DROP TABLE IF EXISTS `Services`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Services` (
-  `id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT,
   `car_license_plate` varchar(7) NOT NULL,
   `service_date` date NOT NULL,
   `description` mediumtext,
