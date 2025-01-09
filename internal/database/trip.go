@@ -68,13 +68,12 @@ func (db *TripDB) GetAllTripsForUser(email string, page, pageSize int) ([]models
 			t.driving_behavior, t.distance,
 			COALESCE(p.amount, 0) as amount,
 			COALESCE(p.payment_method, '') as payment_method,
-			COUNT(*) as trip_count
+			COUNT(*) OVER() as trip_count
 		FROM Trips t
 		LEFT JOIN Payments p
 		ON t.id = p.trip_id
-		WHERE user_email = ?
-		GROUP BY t.id, t.user_email, t.car_license_plate, t.start_time, t.end_time,
-			t.driving_behavior, t.distance, p.amount, p.payment_method
+		WHERE t.user_email = ?
+		ORDER BY t.start_time DESC
 		LIMIT ? OFFSET ?
 	`
 

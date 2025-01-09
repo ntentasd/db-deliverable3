@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -240,6 +241,17 @@ func (srv *Server) SetupTripRoutes() {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to update driving behavior"})
 		}
 
+		var subbed bool
+		if sub, err := srv.Database.SubscriptionDB.GetActiveSubscription(email); err == nil && sub.EndDate.After(time.Now()) {
+			subbed = true
+		}
+
+		// If subbed, set the payment amount to 0 and payment method to `SUBSCRIPTION`
+		if subbed {
+			payload.Amount = 0
+			payload.PaymentMethod = models.Sub
+		}
+
 		err = srv.Database.PaymentDB.CreatePayment(tx, tripID, payload.Amount, string(payload.PaymentMethod))
 		if err != nil {
 			log.Println(err)
@@ -247,7 +259,7 @@ func (srv *Server) SetupTripRoutes() {
 		}
 
 		if err = tx.Commit(); err != nil {
-			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"errir": "failed to commit transaction"})
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to commit transaction"})
 		}
 
 		return c.Status(http.StatusCreated).JSON(fiber.Map{"message": "trip ended successfully"})

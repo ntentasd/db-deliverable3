@@ -18,12 +18,13 @@ func NewDamageDB(db *sql.DB) *DamageDB {
 }
 
 // GetDamagesByLicensePlate retrieves all damages for a specific car
-func (db *DamageDB) GetDamages(licensePlate string, page, pageSize int) ([]models.Damage, error) {
+func (db *DamageDB) GetDamages(licensePlate string, page, pageSize int) ([]models.Damage, int, error) {
 	offset := (page - 1) * pageSize
 
 	query := `
-		SELECT id, description, reported_date, repair_cost, repaired 
-		FROM Damages 
+		SELECT id, description, reported_date, repair_cost, repaired,
+		COUNT(*) OVER() as damage_count
+		FROM Damages
 		WHERE car_license_plate = ?
 		LIMIT ? OFFSET ?
 	`
@@ -33,12 +34,13 @@ func (db *DamageDB) GetDamages(licensePlate string, page, pageSize int) ([]model
 
 	rows, err := db.DB.QueryContext(ctx, query, licensePlate, pageSize, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
 	var damages []models.Damage
 	var repairedBit []byte
+	var count int
 	for rows.Next() {
 		var damage models.Damage
 		if err := rows.Scan(
@@ -47,8 +49,9 @@ func (db *DamageDB) GetDamages(licensePlate string, page, pageSize int) ([]model
 			&damage.ReportedDate,
 			&damage.RepairCost,
 			&repairedBit,
+			&count,
 		); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		damage.Repaired = repairedBit[0] == 1
@@ -56,31 +59,14 @@ func (db *DamageDB) GetDamages(licensePlate string, page, pageSize int) ([]model
 		damages = append(damages, damage)
 	}
 
-	return damages, nil
-}
-
-func (db *DamageDB) GetTotalDamages(license_plate string) (int, error) {
-	var count int
-	query := `
-		SELECT COUNT(*)
-		FROM Damages
-		WHERE car_license_plate = ?
-	`
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	err := db.DB.QueryRowContext(ctx, query, license_plate).Scan(&count)
-	if err != nil {
-		return 0, err
-	}
-	return count, err
+	return damages, count, nil
 }
 
 // AddDamage adds a new damage entry to the database
 func (db *DamageDB) AddDamage(damage models.Damage) error {
 	query := `
-		INSERT INTO Damages (car_license_plate, description, reported_date, repair_cost, repaired) 
+		INSERT INTO Damages
+		(car_license_plate, description, reported_date, repair_cost, repaired)
 		VALUES (?, ?, ?, ?, ?)
 	`
 
@@ -89,13 +75,37 @@ func (db *DamageDB) AddDamage(damage models.Damage) error {
 		repairedValue = 1
 	}
 
-	_, err := db.DB.Exec(query,
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := db.DB.ExecContext(ctx, query,
 		damage.CarLicensePlate,
 		damage.Description,
 		damage.ReportedDate,
 		damage.RepairCost,
 		repairedValue,
 	)
+	return err
+}
 
+// AddDamage adds a new damage entry to the database
+func (db *DamageDB) EditDamageState(license_plate string, repaired bool) error {
+	query := `
+		UPDATE Damages
+		SET repaired = ?
+		WHERE car_license_plate = ?
+	`
+
+	var repairedValue []byte
+	if repaired {
+		repairedValue = []byte{1}
+	} else {
+		repairedValue = []byte{0}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := db.DB.ExecContext(ctx, query, repairedValue, license_plate)
 	return err
 }

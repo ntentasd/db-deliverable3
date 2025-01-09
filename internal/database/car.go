@@ -18,11 +18,12 @@ func NewCarDatabase(db *sql.DB) *CarDB {
 	return &CarDB{DB: db}
 }
 
-func (db *CarDB) GetAllCars(page, pageSize int) ([]models.Car, error) {
+func (db *CarDB) GetAllCars(page, pageSize int) ([]models.Car, int, error) {
 	offset := (page - 1) * pageSize
 
 	query := `
-		SELECT *
+		SELECT *,
+		COUNT(*) OVER() as total_cars
 		FROM Cars
 		LIMIT ? OFFSET ?
 	`
@@ -32,28 +33,36 @@ func (db *CarDB) GetAllCars(page, pageSize int) ([]models.Car, error) {
 
 	rows, err := db.DB.QueryContext(ctx, query, pageSize, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
 	var cars []models.Car
+	var count int
 	for rows.Next() {
 		var car models.Car
 		if err := rows.Scan(
-			&car.LicensePlate, &car.Make, &car.Model, &car.Status, &car.CostPerKm, &car.Location,
+			&car.LicensePlate,
+			&car.Make,
+			&car.Model,
+			&car.Status,
+			&car.CostPerKm,
+			&car.Location,
+			&count,
 		); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		cars = append(cars, car)
 	}
-	return cars, nil
+	return cars, count, nil
 }
 
-func (db *CarDB) GetAllAvailableCars(page, pageSize int) ([]models.Car, error) {
+func (db *CarDB) GetAllAvailableCars(page, pageSize int) ([]models.Car, int, error) {
 	offset := (page - 1) * pageSize
 
 	query := `
-		SELECT *
+		SELECT *,
+		COUNT(*) OVER() as total_available_cars
 		FROM Cars
 		WHERE status = 'AVAILABLE'
 		LIMIT ? OFFSET ?
@@ -64,21 +73,108 @@ func (db *CarDB) GetAllAvailableCars(page, pageSize int) ([]models.Car, error) {
 
 	rows, err := db.DB.QueryContext(ctx, query, pageSize, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
 	var cars []models.Car
+	var count int
 	for rows.Next() {
 		var car models.Car
 		if err := rows.Scan(
-			&car.LicensePlate, &car.Make, &car.Model, &car.Status, &car.CostPerKm, &car.Location,
+			&car.LicensePlate,
+			&car.Make,
+			&car.Model,
+			&car.Status,
+			&car.CostPerKm,
+			&car.Location,
+			&count,
 		); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		cars = append(cars, car)
 	}
-	return cars, nil
+	return cars, count, nil
+}
+
+func (db *CarDB) GetAllRentedCars(page, pageSize int) ([]models.Car, int, error) {
+	offset := (page - 1) * pageSize
+
+	query := `
+		SELECT *,
+		COUNT(*) OVER() as total_available_cars
+		FROM Cars
+		WHERE status = 'RENTED'
+		LIMIT ? OFFSET ?
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := db.DB.QueryContext(ctx, query, pageSize, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var cars []models.Car
+	var count int
+	for rows.Next() {
+		var car models.Car
+		if err := rows.Scan(
+			&car.LicensePlate,
+			&car.Make,
+			&car.Model,
+			&car.Status,
+			&car.CostPerKm,
+			&car.Location,
+			&count,
+		); err != nil {
+			return nil, 0, err
+		}
+		cars = append(cars, car)
+	}
+	return cars, count, nil
+}
+
+func (db *CarDB) GetAllMaintenanceCars(page, pageSize int) ([]models.Car, int, error) {
+	offset := (page - 1) * pageSize
+
+	query := `
+		SELECT *,
+		COUNT(*) OVER() as total_available_cars
+		FROM Cars
+		WHERE status = 'MAINTENANCE'
+		LIMIT ? OFFSET ?
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := db.DB.QueryContext(ctx, query, pageSize, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var cars []models.Car
+	var count int
+	for rows.Next() {
+		var car models.Car
+		if err := rows.Scan(
+			&car.LicensePlate,
+			&car.Make,
+			&car.Model,
+			&car.Status,
+			&car.CostPerKm,
+			&car.Location,
+			&count,
+		); err != nil {
+			return nil, 0, err
+		}
+		cars = append(cars, car)
+	}
+	return cars, count, nil
 }
 
 func (db *CarDB) GetCarByLicensePlate(licensePlate string) (models.Car, error) {
@@ -187,23 +283,6 @@ func (db *CarDB) DeleteCar(licensePlate string) (models.Car, error) {
 	}
 
 	return car, nil
-}
-
-func (db *CarDB) GetTotalCarCount() (int, error) {
-	var count int
-	query := `
-		SELECT COUNT(*)
-		FROM Cars
-	`
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	err := db.DB.QueryRowContext(ctx, query).Scan(&count)
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
 }
 
 func (db *CarDB) GetTotalAvailableCarCount() (int, error) {

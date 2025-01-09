@@ -37,17 +37,89 @@ func (srv *Server) SetupCarRoutes() {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
 		}
 
-		totalCars, err := srv.Database.CarDB.GetTotalCarCount()
+		cars, totalCars, err := srv.Database.CarDB.GetAllCars(page, pageSize)
 		if err != nil {
-			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to fetch total cars count"})
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
 		totalPages := (totalCars + pageSize - 1) / pageSize
 
-		cars, err := srv.Database.CarDB.GetAllCars(page, pageSize)
+		return c.JSON(fiber.Map{
+			"data": cars,
+			"meta": fiber.Map{
+				"current_page": page,
+				"page_size":    pageSize,
+				"total_pages":  totalPages,
+				"total_cars":   totalCars,
+			},
+		})
+	})
+
+	// Get all rented cars
+	authenticatedGroup.Get("/rented", func(c *fiber.Ctx) error {
+		_, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
+		if !checkAdmin(c) {
+			return c.Status(http.StatusForbidden).JSON(fiber.Map{"error": "forbidden"})
+		}
+
+		page := c.QueryInt("page", 1)
+		if page < 1 {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageNumber.Error()})
+		}
+
+		pageSize := c.QueryInt("page_size", 5)
+		if pageSize < 1 || pageSize > 100 {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
+		}
+
+		cars, totalCars, err := srv.Database.CarDB.GetAllRentedCars(page, pageSize)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
+
+		totalPages := (totalCars + pageSize - 1) / pageSize
+
+		return c.JSON(fiber.Map{
+			"data": cars,
+			"meta": fiber.Map{
+				"current_page": page,
+				"page_size":    pageSize,
+				"total_pages":  totalPages,
+				"total_cars":   totalCars,
+			},
+		})
+	})
+
+	// Get all maintenance cars
+	authenticatedGroup.Get("/maintenance", func(c *fiber.Ctx) error {
+		_, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
+		if !checkAdmin(c) {
+			return c.Status(http.StatusForbidden).JSON(fiber.Map{"error": "forbidden"})
+		}
+
+		page := c.QueryInt("page", 1)
+		if page < 1 {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageNumber.Error()})
+		}
+
+		pageSize := c.QueryInt("page_size", 5)
+		if pageSize < 1 || pageSize > 100 {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
+		}
+
+		cars, totalCars, err := srv.Database.CarDB.GetAllMaintenanceCars(page, pageSize)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		totalPages := (totalCars + pageSize - 1) / pageSize
+
 		return c.JSON(fiber.Map{
 			"data": cars,
 			"meta": fiber.Map{
@@ -71,17 +143,13 @@ func (srv *Server) SetupCarRoutes() {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
 		}
 
-		totalCars, err := srv.Database.CarDB.GetTotalAvailableCarCount()
+		cars, totalCars, err := srv.Database.CarDB.GetAllAvailableCars(page, pageSize)
 		if err != nil {
-			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to fetch total cars count"})
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 
 		totalPages := (totalCars + pageSize - 1) / pageSize
 
-		cars, err := srv.Database.CarDB.GetAllAvailableCars(page, pageSize)
-		if err != nil {
-			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
-		}
 		return c.JSON(fiber.Map{
 			"data": cars,
 			"meta": fiber.Map{
@@ -215,18 +283,13 @@ func (srv *Server) SetupCarRoutes() {
 			return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Car not found"})
 		}
 
-		totalDamages, err := srv.Database.DamageDB.GetTotalDamages(car.LicensePlate)
-		if err != nil {
-			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "failed to fetch total damages count"})
-		}
-
-		totalPages := (totalDamages + pageSize - 1) / pageSize
-
 		// Fetch damages
-		damages, err := srv.Database.DamageDB.GetDamages(licensePlate, page, pageSize)
+		damages, totalDamages, err := srv.Database.DamageDB.GetDamages(licensePlate, page, pageSize)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
+
+		totalPages := (totalDamages + pageSize - 1) / pageSize
 
 		return c.JSON(fiber.Map{
 			"data": fiber.Map{
@@ -240,6 +303,30 @@ func (srv *Server) SetupCarRoutes() {
 				"total_damages": totalDamages,
 			},
 		})
+	})
+
+	authenticatedGroup.Post("/damages", func(c *fiber.Ctx) error {
+		_, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
+		if !checkAdmin(c) {
+			return c.Status(http.StatusForbidden).JSON(fiber.Map{"error": "forbidden"})
+		}
+		var damage models.Damage
+		if err := c.BodyParser(&damage); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		}
+		if err := validator.Struct(damage); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": ErrValidationFailed.Error()})
+		}
+
+		err := srv.Database.DamageDB.AddDamage(damage)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		return c.Status(http.StatusCreated).JSON(fiber.Map{"message": "damage added successfully"})
 	})
 
 	carGroup.Get("/:license_plate/services", func(c *fiber.Ctx) error {
@@ -291,10 +378,41 @@ func (srv *Server) SetupCarRoutes() {
 		})
 	})
 
+	authenticatedGroup.Post("/services", func(c *fiber.Ctx) error {
+		_, ok := c.Locals(string(middleware.Email)).(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
+		if !checkAdmin(c) {
+			return c.Status(http.StatusForbidden).JSON(fiber.Map{"error": "forbidden"})
+		}
+		var service models.Service
+		if err := c.BodyParser(&service); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
+		}
+		if err := validator.Struct(service); err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": ErrValidationFailed.Error()})
+		}
+
+		err := srv.Database.ServiceDB.AddService(service)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		return c.Status(http.StatusCreated).JSON(fiber.Map{"message": "service added successfully"})
+	})
+
 	// Add authenticated Post endpoint for services and damages
 }
 
 func validateLicensePlate(fl validator.FieldLevel) bool {
 	re := regexp.MustCompile(`^[A-Za-z]{3}[0-9]{4}$`)
 	return re.MatchString(fl.Field().String())
+}
+
+func checkAdmin(c *fiber.Ctx) bool {
+	if role, ok := c.Locals(string(middleware.Role)).(string); ok && role == "Admin" {
+		return true
+	}
+	return false
 }
