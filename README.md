@@ -92,3 +92,39 @@ npm install
 ```bash
 npm run dev
 ```
+
+---
+## How to use the app
+
+### Login/Signup
+
+You can create a user or log in via the Login/Signup button on the Navbar, to experience a user's perspective. You can also login as admin, in order to access admin features, like adding cars or changing their attributes (prices, services, damages) in order to alter the data users see. The admin credentials are:
+
+Email: ```admin@datadrive.com```
+
+Password: ```password```
+
+---
+### Rent a car
+
+You can rent a car, starting a trip, by heading to the trips page, after signing in to the app. In the rent page, you can inspect the available cars and rent them. After renting, a modal appears while the trip is active. Click on stop trip to start the process. Since this is a demo app, you have to manually assign the trip's distance and driving behavior, simulating sensor data input, as well as selecting the desired payment method. After that, you can optionally leave a review. The rent page displays paginated data.
+
+---
+### View trips
+
+All trips are logged in the trips page, in descending chronological order. Each trip component informs the user about the trip metadata, as well as the payment method and driving behavior. The trips page displays paginated data.
+
+---
+### Buy a subscription
+
+In the subscriptions page, you can select which subscription to buy, between the three provided tiers. Once a subscription is active, all trips assume a payment method of type subscription (and therefore no additional money is required) upon stoppping. The user is also not allowed to purchase a new one, without cancelling the active one.
+
+---
+### View your profile
+
+In the profile page, you can view your user data, along with the calculated driving behavior adjusted by all your trips. This page provides features like changing the username or full name (unfortunately not the email, since it is the primary key) or deleting the account entirely. By clicking on the settings button, you are redirected to the settings page, where the optimal settings for each user are registered, regarding the DataDrive car fleet. At first, you can fill in the form, skipping the fields you don't want to set. You can come back to this page, and edit any field you desire.
+
+---
+### Manage cars
+
+By logging in as admin, you can navigate to the cars page and register a new car, or adjust a car's details. You can also click on a car and view/change the services and damages recorded for the selected car. The cars page displays paginated data.
