@@ -14,6 +14,12 @@ services:
       - ./datadrive.sql:/docker-entrypoint-initdb.d/01-init.sql
       - ./my.cnf:/etc/mysql/my.cnf
     command: --default-authentication-plugin=mysql_native_password --performance-schema=ON --innodb-buffer-pool-size=256M
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
       - datadrive-network
 
@@ -22,6 +28,21 @@ services:
     container_name: memcached
     ports:
       - "11211:11211"
+    networks:
+      - datadrive-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.46
+    container_name: jaeger
+    environment:
+      - COLLECTOR_OTLP_HTTP_PORT=4318
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
+      - "4318:4318"
+    volumes:
+      - jaeger_data:/data
     networks:
       - datadrive-network
 
@@ -38,8 +59,13 @@ services:
       JWT_SECRET: buhbuhbuhbuh
       MEMCACHED_HOST: memcached
       MEMCACHED_PORT: 11211
+      JAEGER_HOST: jaeger
+      JAEGER_PORT: 4318
     ports:
       - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - datadrive-network
 
@@ -56,6 +82,9 @@ services:
 
 volumes:
   db_data:
+    driver: local
+  jaeger_data:
+    driver: local
 
 networks:
   datadrive-network:

@@ -60,6 +60,7 @@ Ensure the following are installed on your system:
   - DB_NAME
   - DB_USER
   - DB_PASSWORD
+  - JWT_SECRET
 
 2. Source the file
 ```bash

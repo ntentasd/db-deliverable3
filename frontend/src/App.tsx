@@ -38,7 +38,7 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
     return <div>Loading...</div>;
   }
 
-  return isAuthenticated ? children : <Navigate to="/auth" replace />;
+  return isAuthenticated ? children : <Navigate to="/" replace />;
 };
 
 const App: React.FC = () => {

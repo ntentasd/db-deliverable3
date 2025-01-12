@@ -6,6 +6,9 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/ntentasd/db-deliverable3/internal/database"
 	"github.com/ntentasd/db-deliverable3/internal/middleware"
 	"github.com/ntentasd/db-deliverable3/internal/models"
@@ -22,6 +25,13 @@ func (srv *Server) SetupCarRoutes() {
 
 	// Get all cars
 	authenticatedGroup.Get("/", func(c *fiber.Ctx) error {
+		tracer := otel.Tracer("server")
+		ctx, span := tracer.Start(c.Context(), "GetAllCarsHandler")
+		defer span.End()
+
+		correlationID := c.Locals(middleware.CorrelationIDHeader).(string)
+		span.SetAttributes(attribute.String("correlation.id", correlationID))
+
 		_, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
@@ -40,7 +50,7 @@ func (srv *Server) SetupCarRoutes() {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
 		}
 
-		cars, totalCars, err := srv.Database.CarDB.GetAllCars(page, pageSize)
+		cars, totalCars, err := srv.Database.CarDB.GetAllCars(ctx, page, pageSize)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -60,6 +70,9 @@ func (srv *Server) SetupCarRoutes() {
 
 	// Get all rented cars
 	authenticatedGroup.Get("/rented", func(c *fiber.Ctx) error {
+		ctx, span := InitServerTracer(c, "GetAllRentedCarsHandler")
+		defer span.End()
+
 		_, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
@@ -78,7 +91,7 @@ func (srv *Server) SetupCarRoutes() {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
 		}
 
-		cars, totalCars, err := srv.Database.CarDB.GetAllRentedCars(page, pageSize)
+		cars, totalCars, err := srv.Database.CarDB.GetAllRentedCars(ctx, page, pageSize)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -98,6 +111,9 @@ func (srv *Server) SetupCarRoutes() {
 
 	// Get all maintenance cars
 	authenticatedGroup.Get("/maintenance", func(c *fiber.Ctx) error {
+		ctx, span := InitServerTracer(c, "GetAllMaintenanceCarsHandler")
+		defer span.End()
+
 		_, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
@@ -116,7 +132,7 @@ func (srv *Server) SetupCarRoutes() {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
 		}
 
-		cars, totalCars, err := srv.Database.CarDB.GetAllMaintenanceCars(page, pageSize)
+		cars, totalCars, err := srv.Database.CarDB.GetAllMaintenanceCars(ctx, page, pageSize)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -136,6 +152,9 @@ func (srv *Server) SetupCarRoutes() {
 
 	// Get all available cars
 	srv.FiberApp.Get("/available", func(c *fiber.Ctx) error {
+		ctx, span := InitServerTracer(c, "GetAllAvailableCarsHandler")
+		defer span.End()
+
 		page := c.QueryInt("page", 1)
 		if page < 1 {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageNumber.Error()})
@@ -146,7 +165,7 @@ func (srv *Server) SetupCarRoutes() {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": database.ErrInvalidPageSize.Error()})
 		}
 
-		cars, totalCars, err := srv.Database.CarDB.GetAllAvailableCars(page, pageSize)
+		cars, totalCars, err := srv.Database.CarDB.GetAllAvailableCars(ctx, page, pageSize)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -166,6 +185,13 @@ func (srv *Server) SetupCarRoutes() {
 
 	// Get car by license plate
 	authenticatedGroup.Get("/:license_plate", func(c *fiber.Ctx) error {
+		tracer := otel.Tracer("server")
+		ctx, span := tracer.Start(c.Context(), "GetCarByLicensePlateHandler")
+		defer span.End()
+
+		correlationID := c.Locals(middleware.CorrelationIDHeader).(string)
+		span.SetAttributes(attribute.String("correlation.id", correlationID))
+
 		_, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
@@ -174,7 +200,7 @@ func (srv *Server) SetupCarRoutes() {
 		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
 		}
-		car, err := srv.Database.CarDB.GetCarByLicensePlate(licensePlate)
+		car, err := srv.Database.CarDB.GetCarByLicensePlate(ctx, licensePlate)
 		if err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -183,6 +209,9 @@ func (srv *Server) SetupCarRoutes() {
 
 	// Add a new car
 	authenticatedGroup.Post("/", func(c *fiber.Ctx) error {
+		ctx, span := InitServerTracer(c, "CreateNewCarHandler")
+		defer span.End()
+
 		var car models.Car
 		_, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
@@ -209,7 +238,7 @@ func (srv *Server) SetupCarRoutes() {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"errors": errorMsgs})
 		}
 		car.Status = "AVAILABLE"
-		if err := srv.Database.CarDB.InsertCar(car); err != nil {
+		if err := srv.Database.CarDB.InsertCar(ctx, car); err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"errors": err.Error()})
 		}
 
@@ -221,6 +250,9 @@ func (srv *Server) SetupCarRoutes() {
 
 	// Update car details
 	authenticatedGroup.Put("/:license_plate", func(c *fiber.Ctx) error {
+		ctx, span := InitServerTracer(c, "UpdateCarDetailsHandler")
+		defer span.End()
+
 		_, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
@@ -242,7 +274,7 @@ func (srv *Server) SetupCarRoutes() {
 		if err := validate.Struct(car); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
-		updatedCar, err := srv.Database.CarDB.UpdateCar(models.Car{
+		updatedCar, err := srv.Database.CarDB.UpdateCar(ctx, models.Car{
 			LicensePlate: licensePlate,
 			Make:         car.Make,
 			Model:        car.Model,
@@ -266,6 +298,9 @@ func (srv *Server) SetupCarRoutes() {
 
 	// Delete a car
 	authenticatedGroup.Delete("/:license_plate", func(c *fiber.Ctx) error {
+		ctx, span := InitServerTracer(c, "DeleteCarHandler")
+		defer span.End()
+
 		_, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
@@ -277,7 +312,7 @@ func (srv *Server) SetupCarRoutes() {
 		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
 		}
-		car, err := srv.Database.CarDB.DeleteCar(licensePlate)
+		car, err := srv.Database.CarDB.DeleteCar(ctx, licensePlate)
 		if err != nil {
 			if err == database.ErrCarNotFound {
 				return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
@@ -292,6 +327,13 @@ func (srv *Server) SetupCarRoutes() {
 	})
 
 	carGroup.Get("/:license_plate/damages", func(c *fiber.Ctx) error {
+		tracer := otel.Tracer("server")
+		ctx, span := tracer.Start(c.Context(), "GetCarDamagesHandler")
+		defer span.End()
+
+		correlationID := c.Locals(middleware.CorrelationIDHeader).(string)
+		span.SetAttributes(attribute.String("correlation.id", correlationID))
+
 		licensePlate := c.Params("license_plate")
 		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
@@ -308,7 +350,7 @@ func (srv *Server) SetupCarRoutes() {
 		}
 
 		// Fetch car details
-		car, err := srv.Database.CarDB.GetCarByLicensePlate(licensePlate)
+		car, err := srv.Database.CarDB.GetCarByLicensePlate(ctx, licensePlate)
 		if err != nil {
 			return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Car not found"})
 		}
@@ -360,6 +402,13 @@ func (srv *Server) SetupCarRoutes() {
 	})
 
 	carGroup.Get("/:license_plate/services", func(c *fiber.Ctx) error {
+		tracer := otel.Tracer("server")
+		ctx, span := tracer.Start(c.Context(), "GetCarServicesHandler")
+		defer span.End()
+
+		correlationID := c.Locals(middleware.CorrelationIDHeader).(string)
+		span.SetAttributes(attribute.String("correlation.id", correlationID))
+
 		licensePlate := c.Params("license_plate")
 		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
@@ -376,7 +425,7 @@ func (srv *Server) SetupCarRoutes() {
 		}
 
 		// Fetch car details
-		car, err := srv.Database.CarDB.GetCarByLicensePlate(licensePlate)
+		car, err := srv.Database.CarDB.GetCarByLicensePlate(ctx, licensePlate)
 		if err != nil {
 			return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": "Car not found"})
 		}
