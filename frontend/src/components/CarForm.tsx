@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { addCar } from "../services/carsApi";
+import { capitalizeFirstLetter } from "../services/formatUtils";
 
 interface CarFormProps {
   onInsert?: () => void;
@@ -14,6 +15,7 @@ const CarForm: React.FC<CarFormProps> = ({ onInsert }) => {
     costPerKm: "",
     location: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -42,10 +44,20 @@ const CarForm: React.FC<CarFormProps> = ({ onInsert }) => {
         location: "",
       });
 
+      setErrors({});
       if (onInsert) onInsert();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to add car:", error);
-      alert("Failed to add car.");
+
+      // Handle both `errors` and `error` from the backend response
+      const backendErrors = error.response?.data;
+      if (backendErrors?.errors) {
+        setErrors(backendErrors.errors); // Field-specific errors
+      } else if (backendErrors?.error) {
+        setErrors({ general: backendErrors.error }); // General error
+      } else {
+        setErrors({ general: "An unexpected error occurred" }); // Fallback for unexpected errors
+      }
     }
   };
 
@@ -54,6 +66,11 @@ const CarForm: React.FC<CarFormProps> = ({ onInsert }) => {
       onSubmit={handleSubmit}
       className="bg-gray-800 p-6 rounded-lg shadow-md space-y-6"
     >
+      {errors.general && (
+        <p className="text-red-500 text-sm text-center">
+          {capitalizeFirstLetter(errors.general)}
+        </p>
+      )}
       <h2 className="text-2xl font-bold text-teal-400">Add a New Car</h2>
       <div>
         <label className="block text-sm font-medium text-gray-300">
@@ -67,6 +84,9 @@ const CarForm: React.FC<CarFormProps> = ({ onInsert }) => {
           className="w-full p-2 mt-1 rounded bg-gray-700 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
           required
         />
+        {errors.license_plate && (
+          <p className="text-red-500 text-sm mt-1">{capitalizeFirstLetter(errors.license_plate)}</p>
+        )}
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-300">Make</label>

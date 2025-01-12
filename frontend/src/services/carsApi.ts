@@ -1,4 +1,5 @@
 import { authHeaders, baseApi, Metadata } from "./api";
+import { ErrorResponse } from "./reviewsApi";
 
 export interface Car {
   license_plate: string;
@@ -88,7 +89,7 @@ export const updateCarStatus = async (
   return response.data;
 };
 
-export const updateCar = async (car: Car) => {
+export const updateCar = async (car: Car): Promise<ErrorResponse> => {
   const inputCar = {
     make: car.make,
     model: car.model,

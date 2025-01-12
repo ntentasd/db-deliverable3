@@ -21,14 +21,24 @@ import Settings from "./pages/Settings";
 import CarDetails from "./components/CarDetails";
 import Subscriptions from "./pages/Subscriptions";
 
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? children : <Navigate to="/auth" replace />;
+const AdminRoute = ({ children }: { children: JSX.Element }) => {
+  const { isAdmin, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return isAdmin ? children : <Navigate to="/not-found" replace />;
 };
 
-const AdminRoute = ({ children }: { children: JSX.Element }) => {
-  const { isAdmin } = useAuth();
-  return isAdmin ? children : <Navigate to="/not-found" replace />;
+const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return isAuthenticated ? children : <Navigate to="/auth" replace />;
 };
 
 const App: React.FC = () => {

@@ -7,9 +7,12 @@ import { useRefresh } from "../contexts/RefreshContext";
 import { useAuth } from "../contexts/AuthContext";
 import { Helmet } from "react-helmet";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
+// import { useNavigate } from "react-router-dom";
+import ConfirmationModal from "../components/ConfirmationModal";
 
 const Rent: React.FC = () => {
   const { triggerRefresh } = useRefresh();
+  // const navigate = useNavigate();
   const { isAuthenticated, isAdmin } = useAuth();
   const [cars, setCars] = useState<Car[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,19 +20,17 @@ const Rent: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasActiveTrip, setHasActiveTrip] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedCar, setSelectedCar] = useState<Car | null>(null);
 
   const fetchCars = async (page: number) => {
     setLoading(true);
     setError(null);
 
-    // Ensure loader is shown for at least 500ms
     const delay = new Promise((resolve) => setTimeout(resolve, 500));
 
     try {
-      const [data] = await Promise.all([
-        getAvailableCars(page, 6),
-        delay,
-      ]);
+      const [data] = await Promise.all([getAvailableCars(page, 6), delay]);
       setCars(data.data || []);
       setCurrentPage(data.meta.current_page);
       setTotalPages(data.meta.total_pages);
@@ -64,14 +65,23 @@ const Rent: React.FC = () => {
     checkActiveTrip();
   }, [currentPage, hasActiveTrip, isAuthenticated]);
 
-  const handleRent = async (license_plate: string) => {
+  const handleRent = (license_plate: string) => {
+    const car = cars.find((c) => c.license_plate === license_plate);
+    setSelectedCar(car || null);
+    setShowModal(true);
+  };
+
+
+  const confirmRent = async () => {
+    if (!selectedCar) return;
     try {
-      await startTrip(license_plate);
-      alert("Ride started successfully!");
+      await startTrip(selectedCar.license_plate);
+      setShowModal(false);
       triggerRefresh();
       checkActiveTrip();
     } catch (err: any) {
-      alert(err.response?.data?.error || "Failed to start the ride.");
+      setError(err.response?.data?.error || "Failed to start the ride.");
+      setShowModal(false);
     }
   };
 
@@ -108,7 +118,6 @@ const Rent: React.FC = () => {
                   key={`skeleton-card-${index}`}
                   className="h-[220px] card-container skeleton-loader animate-pulse border border-gray-700 rounded-lg p-6 bg-gray-800"
                 >
-                  {/* Placeholder content */}
                   <div className="h-6 w-1/2 bg-gray-600 rounded mb-4"></div>
                   <div className="h-4 w-3/4 bg-gray-700 rounded mb-2"></div>
                   <div className="h-4 w-1/2 bg-gray-700 rounded mb-4"></div>
@@ -117,7 +126,6 @@ const Rent: React.FC = () => {
               ))}
             </div>
           ) : (
-            // Render RentCards with placeholders to maintain 6 items per page
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {cars.map((car) => (
                 <RentCard
@@ -127,7 +135,6 @@ const Rent: React.FC = () => {
                 />
               ))}
 
-              {/* Add placeholders to make sure we always have 6 cards */}
               {Array.from({ length: 6 - cars.length }).map((_, index) => (
                 <div
                   key={`placeholder-card-${index}`}
@@ -137,29 +144,46 @@ const Rent: React.FC = () => {
             </div>
           )}
 
-          {/* Pagination Controls */}
-          <div className="flex justify-between items-center mt-6">
-            <button
-              onClick={handlePreviousPage}
-              disabled={currentPage === 1}
-              className="p-2 rounded-full bg-gray-700 hover:bg-teal-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FaArrowLeft size={18} className="text-white" />
-            </button>
-            <span className="text-gray-400">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-              className="p-2 rounded-full bg-gray-700 hover:bg-teal-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FaArrowRight size={18} className="text-white" />
-            </button>
-          </div>
+          {!loading && cars.length > 0 ? (
+            <div className="flex justify-between items-center mt-6 h-10">
+              <button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                className="p-2 rounded-full bg-gray-700 hover:bg-teal-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FaArrowLeft size={18} className="text-white" />
+              </button>
+              <span className="text-gray-400">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-full bg-gray-700 hover:bg-teal-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FaArrowRight size={18} className="text-white" />
+              </button>
+            </div>
+          ) : (
+            <div className="h-10 mt-6"></div>
+          )}
         </>
       )}
       {isAuthenticated && <ActiveTripPopup />}
+
+      {showModal && selectedCar && (
+        <ConfirmationModal
+          title="Confirm Rental"
+          message={
+            <>
+              Do you want to rent the <span className="text-teal-400">{selectedCar.make} {selectedCar.model}</span> for{" "}
+              <span className="text-green-400 font-bold">${selectedCar.cost_per_km}/km </span>?
+            </>
+          }
+          onConfirm={confirmRent}
+          onCancel={() => setShowModal(false)}
+        />
+      )}
     </div>
   );
 };

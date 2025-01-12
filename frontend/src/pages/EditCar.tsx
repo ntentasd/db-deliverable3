@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCarByLicensePlate, updateCar } from "../services/carsApi";
 import { Helmet } from "react-helmet";
+import ErrorMessage from "../components/ErrorMessage";
+import { capitalizeFirstLetter } from "../services/formatUtils";
 
 const EditCar: React.FC = () => {
   const { license_plate } = useParams<{ license_plate: string }>();
@@ -61,14 +63,16 @@ const EditCar: React.FC = () => {
       await updateCar(updatedCar);
       alert("Car updated successfully!");
       navigate("/cars");
-    } catch (err: any) {
-      setError("Failed to update car.");
+    } catch (error: any) {
+      console.error(error);
+      setError(error.response?.data?.error);
     }
   };
 
   if (loading) return <p className="text-center text-teal-400 mt-6">Loading...</p>;
-  if (error) return <p className="text-center text-red-500 mt-6">{error}</p>;
-
+  if (error) {
+    return <ErrorMessage error={capitalizeFirstLetter(error)} onRetry={() => window.location.reload()} />;
+  }
   return (
     <div className="max-w-2xl mx-auto mt-8 p-6 bg-gray-800 rounded-lg shadow-md">
       <Helmet>

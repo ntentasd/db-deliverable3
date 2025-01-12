@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { getSettings, SettingsMessage, updateSetting, UserSettings } from "../services/settingsApi";
+import {
+  getSettings,
+  SettingsMessage,
+  updateSetting,
+  UserSettings,
+} from "../services/settingsApi";
 import EditableField from "../components/EditableField";
 import SettingsForm from "../components/SettingsForm";
 import { validateField } from "../services/validation";
@@ -37,7 +42,7 @@ const Settings: React.FC = () => {
         console.error("Failed to fetch settings:", err.response?.data || err.message);
         setError(err.response?.data?.error || "Failed to fetch settings.");
       } finally {
-        setLoading(false);
+        setTimeout(() => setLoading(false), 500); // Add 500ms delay
       }
     };
 
@@ -54,7 +59,7 @@ const Settings: React.FC = () => {
           : isNaN(Number(newValue))
           ? newValue
           : parseFloat(newValue);
-  
+
       const response = await updateSetting({ [field]: parsedValue });
       setSettings((prev) => prev && { ...prev, [field]: parsedValue });
       return response;
@@ -62,15 +67,27 @@ const Settings: React.FC = () => {
       throw new Error(err.response?.data?.error || "Update failed.");
     }
   };
-  
 
   const isSettingsEmpty = Object.values(settings).every((value) => value === null || value === false);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <p className="text-gray-400 text-lg">Loading settings...</p>
+      <>
+      <button
+        onClick={() => navigate("/profile")}
+        className="mb-4 bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded transition"
+      >
+        &larr; Back to Profile
+      </button>
+      <div className="max-w-4xl h-[670px] mx-auto mt-10 p-6 bg-gray-800 border border-gray-700 rounded-lg shadow-lg animate-pulse">
+        <h1 className="text-3xl font-bold text-teal-400 mb-6">Settings</h1>
+        <div className="space-y-8">
+          {Array.from({ length: 10 }).map((_, index) => (
+            <div key={index} className="h-6 w-1/3 bg-gray-700 rounded" />
+          ))}
+        </div>
       </div>
+      </>
     );
   }
 
@@ -88,40 +105,38 @@ const Settings: React.FC = () => {
 
   return (
     <>
-    <button
-      onClick={() => navigate("/profile")}
-      className="h-10 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-500 transition"
-    >
-      Back to Profile
-    </button>
-    <div className="max-w-4xl mx-auto mt-10 p-6 bg-gray-800 text-gray-200 rounded-lg shadow-lg">
-      
-      <h1 className="text-3xl font-bold text-teal-400 mb-6">Settings</h1>
+      <button
+        onClick={() => navigate("/profile")}
+        className="mb-4 bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded transition"
+      >
+        &larr; Back to Profile
+      </button>
+      <div className="max-w-4xl h-[670px] mx-auto mt-10 p-6 bg-gray-800 text-gray-200 rounded-lg shadow-lg">
+        <h1 className="text-3xl font-bold text-teal-400 mb-6">Settings</h1>
+        <div className="space-y-6">
+          {Object.entries(settings)
+            .filter(([key]) => key !== "user_email")
+            .map(([key, value]) => {
+              const isCheckbox = typeof value === "boolean";
 
-      <div className="space-y-6">
-        {Object.entries(settings)
-          .filter(([key]) => key !== "user_email")
-          .map(([key, value]) => {
-            const isCheckbox = typeof value === "boolean";
+              return (
+                <div key={key} className="flex justify-between items-center">
+                  <label className="block text-sm font-medium text-gray-300 capitalize">
+                    {key.replace(/_/g, " ")}
+                  </label>
 
-            return (
-              <div key={key} className="flex justify-between items-center">
-                <label className="block text-sm font-medium text-gray-300 capitalize">
-                  {key.replace(/_/g, " ")}
-                </label>
-
-                <EditableField
-                  value={typeof value === "boolean" ? value : value === null ? "" : value}
-                  type={isCheckbox ? "boolean" : key === "drive_mode" ? "enum" : "decimal"}
-                  validate={(val) => validateField(key, val)}
-                  onSave={(newValue) => handleSave(key as keyof UserSettings, newValue)}
-                  enumOptions={key === "drive_mode" ? ["COMFORT", "SPORT", "ECO"] : undefined}
-                />
-              </div>
-            );
-          })}
+                  <EditableField
+                    value={typeof value === "boolean" ? value : value === null ? "" : value}
+                    type={isCheckbox ? "boolean" : key === "drive_mode" ? "enum" : "decimal"}
+                    validate={(val) => validateField(key, val)}
+                    onSave={(newValue) => handleSave(key as keyof UserSettings, newValue)}
+                    enumOptions={key === "drive_mode" ? ["COMFORT", "SPORT", "ECO"] : undefined}
+                  />
+                </div>
+              );
+            })}
+        </div>
       </div>
-    </div>
     </>
   );
 };

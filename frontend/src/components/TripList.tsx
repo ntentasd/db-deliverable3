@@ -15,10 +15,7 @@ const TripList: React.FC = () => {
   const fetchTrips = async (page: number) => {
     try {
       setLoading(true);
-      const [data] = await Promise.all([
-        getTrips(page, 5),
-        delay(500),
-      ]);
+      const [data] = await Promise.all([getTrips(page, 5), delay(500)]);
       setTrips(data.data || []);
       setCurrentPage(data.meta.current_page);
       setTotalPages(data.meta.total_pages);
@@ -51,7 +48,7 @@ const TripList: React.FC = () => {
     Array.from({ length: 5 }).map((_, index) => (
       <div
         key={`skeleton-trip-${index}`}
-        className="border border-gray-700 rounded-lg p-6 bg-gray-800 animate-pulse h-[150px]"
+        className="border border-gray-700 rounded-lg p-6 bg-gray-800 animate-pulse h-[190px]"
       >
         <div className="h-6 w-1/3 bg-gray-600 rounded mb-4"></div>
         <div className="h-4 w-1/2 bg-gray-700 rounded mb-2"></div>
@@ -97,34 +94,36 @@ const TripList: React.FC = () => {
           {Array.from({ length: 5 - filteredTrips.length }).map((_, index) => (
             <div
               key={`placeholder-trip-${index}`}
-              className="border border-gray-700 rounded-lg p-6 bg-gray-800 h-[150px]"
+              className="border border-gray-700 rounded-lg p-6 bg-gray-800 h-[190px]"
             />
           ))}
         </div>
       ) : (
         <div className="text-gray-500 text-center py-6">
-          No trips available. Start by booking your first trip!
+          No trips recorded yet. Start by booking your first trip!
         </div>
       )}
 
       {/* Pagination Controls */}
-      {filteredTrips.length > 0 && (
-        <div className="flex justify-between items-center mt-6">
-          {renderPaginationButton(
-            currentPage === 1,
-            handlePreviousPage,
-            <FaArrowLeft size={18} className="text-white" />
-          )}
-          <span className="text-gray-300 font-medium">
-            Page {currentPage} of {totalPages}
-          </span>
-          {renderPaginationButton(
-            currentPage === totalPages,
-            handleNextPage,
-            <FaArrowRight size={18} className="text-white" />
-          )}
-        </div>
-      )}
+      <div className="flex justify-between items-center mt-6 h-10">
+        {filteredTrips.length > 0 && (
+          <>
+            {renderPaginationButton(
+              currentPage === 1,
+              handlePreviousPage,
+              <FaArrowLeft size={18} className="text-white" />
+            )}
+            <span className="text-gray-300 font-medium">
+              Page {currentPage} of {totalPages}
+            </span>
+            {renderPaginationButton(
+              currentPage === totalPages,
+              handleNextPage,
+              <FaArrowRight size={18} className="text-white" />
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };

@@ -21,6 +21,10 @@ export interface MessageResponse {
   message: string;
 }
 
+export interface ErrorResponse {
+  error: string;
+}
+
 const api = baseApi;
 
 export const getCarReviews = async (licensePlate: string, page: number, page_size: number = 5): Promise<ReviewResponse> => {

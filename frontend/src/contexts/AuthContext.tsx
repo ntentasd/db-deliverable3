@@ -4,7 +4,9 @@ import { isAdminJWT } from "../services/authUtils";
 interface AuthContextProps {
   isAuthenticated: boolean;
   isAdmin: boolean;
+  loading: boolean;
   setAuthToken: (token: string | null) => void;
+  logout: () => void;
 }
 
 interface AuthProviderProps {
@@ -15,6 +17,8 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [authToken, setAuthTokenState] = useState<string | null>(localStorage.getItem("authToken"));
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const setAuthToken = (token: string | null) => {
     if (token) {
@@ -23,18 +27,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.removeItem("authToken");
     }
     setAuthTokenState(token);
+    updateIsAdmin(token);
+  };
+
+  const updateIsAdmin = (token: string | null) => {
+    setIsAdmin(!!token && isAdminJWT());
+  };
+
+  const logout = () => {
+    setAuthToken(null);
   };
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     setAuthTokenState(token);
+    updateIsAdmin(token);
+    setLoading(false);
   }, []);
 
   const isAuthenticated = !!authToken;
-  const isAdmin = isAuthenticated && isAdminJWT();
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isAdmin, setAuthToken }}>
+    <AuthContext.Provider value={{ isAuthenticated, isAdmin, loading, setAuthToken, logout }}>
       {children}
     </AuthContext.Provider>
   );

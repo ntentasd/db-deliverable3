@@ -42,7 +42,7 @@ const Subscriptions: React.FC = () => {
           setError("Failed to load active subscription.");
         }
 
-        setLoading(false);
+        setTimeout(() => setLoading(false), 500); // Add 500ms delay
       } catch {
         setError("An unexpected error occurred. Please try again later.");
         setLoading(false);
@@ -81,7 +81,31 @@ const Subscriptions: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="text-center text-teal-400">Loading...</div>;
+  if (loading) {
+    // Skeleton loader for loading state
+    return (
+      <div className="max-w-4xl mx-auto mt-10 p-6 bg-gray-800 text-gray-200 rounded-lg shadow-lg animate-pulse">
+        <h1 className="text-3xl font-bold text-teal-400 mb-12">Manage Subscriptions</h1>
+        <div className="space-y-6">
+          <div className="h-8 w-2/5 bg-gray-600 rounded"></div>
+          <div className="h-6 w-3/5 bg-gray-700 rounded"></div>
+          <div className="h-6 w-1/3 bg-gray-700 rounded"></div>
+          <div className="h-6 w-1/2 bg-gray-700 rounded"></div>
+        </div>
+        <div className="mt-8 space-y-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={index}
+              className="p-4 bg-gray-700 rounded-lg shadow-md animate-pulse"
+            >
+              <div className="h-4 w-1/2 bg-gray-600 rounded mb-2"></div>
+              <div className="h-4 w-3/4 bg-gray-700 rounded"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return <ErrorMessage error={error} onRetry={() => window.location.reload()} />;

@@ -3,7 +3,6 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { getTripById, stopTrip, Trip } from "../services/tripsApi";
 import ReviewModal from "./ReviewModal";
 import TripModal from "./TripModal";
-import Loader from "./Loader";
 import { createReview } from "../services/reviewsApi";
 import { getActiveSubscription, UserSubscription } from "../services/subscriptionsUtils";
 import ErrorMessage from "./ErrorMessage";
@@ -33,7 +32,6 @@ const TripDetails: React.FC = () => {
   const [drivingBehavior, setDrivingBehavior] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [costPerKm, setCostPerKm] = useState<number>(0);
-  const [amount, setAmount] = useState<number>(0);
 
   useEffect(() => {
     if (location.state?.showStopTripModal) {
@@ -51,7 +49,7 @@ const TripDetails: React.FC = () => {
         setCostPerKm(response.cost_per_km);
         setStopped(!!response.trip.end_time && response.trip.end_time !== "N/A");
         setError(null);
-        setLoading(false);
+        setTimeout(() => setLoading(false), 500); // 500ms delay for skeleton
       } catch (err: any) {
         console.error("Failed to fetch trip details:", err.response?.data || err.message);
         setError(err.response?.data?.error || "Failed to fetch trip details.");
@@ -73,32 +71,36 @@ const TripDetails: React.FC = () => {
     fetchActiveSubscription();
   }, [trip_id]);
 
-  useEffect(() => {
-    const numericDistance = parseFloat(distance);
-    if (!isNaN(numericDistance) && numericDistance > 0) {
-      setAmount(parseFloat((numericDistance * costPerKm).toFixed(2)));
-    } else {
-      setAmount(0);
-    }
-  }, [distance, costPerKm]);
+  // useEffect(() => {
+  //   const numericDistance = parseFloat(distance);
+  //   if (!isNaN(numericDistance) && numericDistance > 0) {
+  //     setAmount(parseFloat((numericDistance * costPerKm).toFixed(2)));
+  //   } else {
+  //     setAmount(0);
+  //   }
+  // }, [distance, costPerKm]);
 
   const handleStopTrip = async (): Promise<string> => {
     if (!distance.trim() || !drivingBehavior.trim() || (!paymentMethod && !activeSubscription)) {
       return "Please fill in all fields and select a payment method.";
     }
-
+  
+    const numericDistance = parseFloat(distance);
+    const numericDrivingBehavior = parseFloat(drivingBehavior);
+    const calculatedAmount = parseFloat((numericDistance * costPerKm).toFixed(2));
+  
     try {
-      await stopTrip(parseFloat(distance), parseFloat(drivingBehavior), paymentMethod.toUpperCase(), amount);
-      setStopped(true);
-      setShowTripModal(false);
+      await stopTrip(numericDistance, numericDrivingBehavior, paymentMethod.toUpperCase(), calculatedAmount);
       setTrip((prev) => ({
         ...prev,
         end_time: new Date().toISOString(),
-        distance: parseFloat(distance),
-        driving_behavior: parseFloat(drivingBehavior),
-        amount,
+        distance: numericDistance,
+        driving_behavior: numericDrivingBehavior,
+        amount: calculatedAmount,
         payment_method: paymentMethod,
       }));
+      setStopped(true);
+      setShowTripModal(false);
       setShowReviewModal(true);
       return "Trip stopped successfully!";
     } catch (err: any) {
@@ -117,14 +119,43 @@ const TripDetails: React.FC = () => {
     }
   };
 
-  if (loading) return <Loader />;
+  if (loading) {
+    // Skeleton loader for loading state
+    return (
+      <>
+      <button
+        onClick={() => navigate("/trips")}
+        className="mb-4 bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded transition"
+      >
+        &larr; Back to Trips
+      </button>
+      <div className="max-w-4xl h-[470px] mx-auto mt-10 p-6 bg-gray-800 text-gray-200 rounded-lg shadow-lg space-y-6 animate-pulse">
+        <h1 className="text-3xl font-bold text-teal-400 mb-6">Trip Details</h1>
+        <div className="h-6 bg-gray-700 rounded w-1/6"></div>
+        <div className="h-6 bg-gray-700 rounded w-1/3"></div>
+        <div className="h-6 bg-gray-700 rounded w-1/2"></div>
+        <div className="h-6 bg-gray-700 rounded w-1/4"></div>
+        <div className="h-6 bg-gray-700 rounded w-1/5"></div>
+        <div className="h-6 bg-gray-700 rounded w-2/5"></div>
+      </div>
+      </>
+    );
+  }
 
   if (error) {
     return <ErrorMessage error={error} onRetry={() => window.location.reload()} />;
   }
 
   return (
-    <div className="max-w-4xl mx-auto mt-10 p-6 bg-gray-800 text-gray-200 rounded-lg shadow-lg">
+    <>
+    <button
+      onClick={() => navigate("/trips")}
+      className="mb-4 bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded transition"
+    >
+      &larr; Back to Trips
+    </button>
+    <div className="max-w-4xl h-[470px] mx-auto mt-10 p-6 bg-gray-800 text-gray-200 rounded-lg shadow-lg">
+
       <h1 className="text-3xl font-bold text-teal-400 mb-6">Trip Details</h1>
       <div className="space-y-4">
         <p className="text-lg">
@@ -149,7 +180,7 @@ const TripDetails: React.FC = () => {
           {trip.distance !== undefined && trip.distance !== null ? (
             <span>{trip.distance.toFixed(2)} km</span>
           ) : (
-            <span className="text-gray-400">Not available</span>
+            <span className="text-red-300">Not available</span>
           )}
         </p>
         <p className="text-lg">
@@ -167,12 +198,18 @@ const TripDetails: React.FC = () => {
               {trip.driving_behavior.toFixed(2)}
             </span>
           ) : (
-            <span className="text-gray-400">Not available</span>
+            <span className="text-red-300">Not available</span>
           )}
         </p>
         <p className="text-lg">
           <strong className="text-gray-400">Amount:</strong>{" "}
-          <span>{amount.toFixed(2)} $</span>
+          {trip.amount !== undefined && trip.amount !== null ? (
+            <span className="font-semibold">
+              {trip.amount.toFixed(2)}
+            </span>
+          ) : (
+            <span className="text-red-300">Not available</span>
+          )}
         </p>
       </div>
 
@@ -208,6 +245,7 @@ const TripDetails: React.FC = () => {
         />
       )}
     </div>
+    </>
   );
 };
 

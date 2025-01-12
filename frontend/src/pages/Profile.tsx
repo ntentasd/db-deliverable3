@@ -31,7 +31,7 @@ const Profile: React.FC = () => {
         driving_behavior: null,
         created_at: new Date().toISOString(),
       });
-      setLoading(false);
+      setTimeout(() => setLoading(false), 500);
       return;
     }
 
@@ -44,7 +44,7 @@ const Profile: React.FC = () => {
         console.error("Failed to fetch user details:", err);
         setError("Failed to load user details. Please try again later.");
       } finally {
-        setLoading(false);
+        setTimeout(() => setLoading(false), 500);
       }
     };
 
@@ -59,7 +59,7 @@ const Profile: React.FC = () => {
     setUser((prevUser) => (prevUser ? { ...prevUser, user_name: newUsername } : prevUser));
     return response;
   };
-  
+
   const handleUpdateFullname = async (newFullname: string): Promise<UserMessage> => {
     if (!newFullname.trim() || newFullname.length < 3) {
       throw new Error("Fullname must be at least 3 characters long.");
@@ -91,8 +91,17 @@ const Profile: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900 text-gray-300">
-        <p className="text-lg">Loading user details...</p>
+      <div className="max-w-4xl h-[470px] mx-auto mt-8 p-8 bg-gray-800 border border-gray-700 rounded-lg shadow-lg animate-pulse">
+        <h2 className="text-3xl font-bold mb-8 text-center text-teal-400">
+          {isAdmin ? "Admin Profile" : "User Profile"}
+        </h2>
+        <div className="h-8 w-1/3 bg-gray-600 rounded mb-6"></div>
+        <div className="h-6 w-1/2 bg-gray-700 rounded mb-4"></div>
+        <div className="h-6 w-1/3 bg-gray-700 rounded mb-4"></div>
+        <div className="h-6 w-2/5 bg-gray-700 rounded mb-4"></div>
+        <div className="h-6 w-1/2 bg-gray-700 rounded mb-4"></div>
+        <div className="h-6 w-1/4 bg-gray-700 rounded mb-4"></div>
+        <div className="h-6 w-1/3 bg-gray-700 rounded"></div>
       </div>
     );
   }
@@ -104,7 +113,7 @@ const Profile: React.FC = () => {
   const username = user?.user_name || "";
 
   return (
-    <div className="max-w-4xl mx-auto mt-8 p-8 bg-gray-800 border border-gray-700 rounded-lg shadow-lg">
+    <div className="max-w-4xl h-[470px] mx-auto mt-8 p-8 bg-gray-800 border border-gray-700 rounded-lg shadow-lg">
       <Helmet>
         <title>DataDrive - {capitalizeFirstLetter(username)}'s Profile</title>
       </Helmet>

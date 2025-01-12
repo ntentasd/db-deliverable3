@@ -140,9 +140,9 @@ const CarDetailsWrapper: React.FC = () => {
     <div className="container mx-auto p-6 bg-gray-900 text-gray-100 min-h-screen">
       <button
         onClick={() => navigate(-1)}
-        className="mb-4 px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition"
+        className="mb-4 bg-purple-500 hover:bg-purple-600 text-white py-2 px-4 rounded transition"
       >
-        Back
+        &larr; Back to Cars
       </button>
 
       {/* Services Section */}
@@ -200,27 +200,33 @@ const CarDetailsWrapper: React.FC = () => {
                 );
               })}
         </div>
-        <div className="flex justify-between items-center mt-6">
-          {renderPaginationButton(
-            currentPageServices === 1,
-            async () => {
-              const newPage = Math.max(currentPageServices - 1, 1);
-              setCurrentPageServices(newPage);
-              await fetchServices(newPage);
-            },
-            <FaArrowLeft size={18} className="text-white" />
-          )}
-          <span className="text-gray-300">
-            Page {currentPageServices} of {totalPagesServices}
-          </span>
-          {renderPaginationButton(
-            currentPageServices === totalPagesServices,
-            async () => {
-              const newPage = Math.min(currentPageServices + 1, totalPagesServices);
-              setCurrentPageServices(newPage);
-              await fetchServices(newPage);
-            },
-            <FaArrowRight size={18} className="text-white" />
+        <div className="flex justify-between items-center mt-6 h-8">
+          {loadingServices ? (
+            <div />
+          ) : (
+            <>
+            {renderPaginationButton(
+              currentPageServices === 1,
+              async () => {
+                const newPage = Math.max(currentPageServices - 1, 1);
+                setCurrentPageServices(newPage);
+                await fetchServices(newPage);
+              },
+              <FaArrowLeft size={18} className="text-white" />
+            )}
+            <span className="text-gray-300">
+              Page {currentPageServices} of {totalPagesServices}
+            </span>
+            {renderPaginationButton(
+              currentPageServices === totalPagesServices,
+              async () => {
+                const newPage = Math.min(currentPageServices + 1, totalPagesServices);
+                setCurrentPageServices(newPage);
+                await fetchServices(newPage);
+              },
+              <FaArrowRight size={18} className="text-white" />
+            )}
+            </>
           )}
         </div>
       </div>
@@ -288,28 +294,35 @@ const CarDetailsWrapper: React.FC = () => {
                 );
               })}
         </div>
-        <div className="flex justify-between items-center mt-6">
-          {renderPaginationButton(
-            currentPageDamages === 1,
-            async () => {
-              const newPage = Math.max(currentPageDamages - 1, 1);
-              setCurrentPageDamages(newPage);
-              await fetchDamages(newPage);
-            },
-            <FaArrowLeft size={18} className="text-white" />
+        <div className="flex justify-between items-center mt-6 h-8">
+          {loadingDamages ? (
+            <div />
+          ) : (
+            <>
+              {renderPaginationButton(
+                currentPageDamages === 1,
+                async () => {
+                  const newPage = Math.max(currentPageDamages - 1, 1);
+                  setCurrentPageDamages(newPage);
+                  await fetchDamages(newPage);
+                },
+                <FaArrowLeft size={18} className="text-white" />
+              )}
+              <span className="text-gray-300">
+                Page {currentPageDamages} of {totalPagesDamages}
+              </span>
+              {renderPaginationButton(
+                currentPageDamages === totalPagesDamages,
+                async () => {
+                  const newPage = Math.min(currentPageDamages + 1, totalPagesDamages);
+                  setCurrentPageDamages(newPage);
+                  await fetchDamages(newPage);
+                },
+                <FaArrowRight size={18} className="text-white" />
+              )}
+            </>
           )}
-          <span className="text-gray-300">
-            Page {currentPageDamages} of {totalPagesDamages}
-          </span>
-          {renderPaginationButton(
-            currentPageDamages === totalPagesDamages,
-            async () => {
-              const newPage = Math.min(currentPageDamages + 1, totalPagesDamages);
-              setCurrentPageDamages(newPage);
-              await fetchDamages(newPage);
-            },
-            <FaArrowRight size={18} className="text-white" />
-          )}
+
         </div>
       </div>
 

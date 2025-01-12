@@ -121,7 +121,7 @@ const CarList: React.FC<CarListProps> = ({ setOnInsertHandler }) => {
             return (
               <div
                 key={`placeholder-card-${index}`}
-                className="h-[200px] border border-gray-700 rounded-lg p-4 bg-gray-800"
+                className="h-[170px] border border-gray-700 rounded-lg p-4 bg-gray-800"
               />
             );
           })
@@ -129,8 +129,11 @@ const CarList: React.FC<CarListProps> = ({ setOnInsertHandler }) => {
       </ul>
 
       {/* Pagination Controls */}
-      {cars.length > 0 && (
-        <div className="flex justify-between items-center mt-6">
+      <div className="flex justify-between items-center mt-6 h-10">
+        {loading ? (
+          <div className="w-16" />
+        ) : (
+          <>
           <button
             onClick={handlePreviousPage}
             disabled={currentPage === 1}
@@ -139,7 +142,7 @@ const CarList: React.FC<CarListProps> = ({ setOnInsertHandler }) => {
             <FaArrowLeft size={18} className="text-white" />
           </button>
           <span className="text-gray-400 font-medium">
-            Page {currentPage} of {totalPages}
+            {loading ? <span className="w-16 bg-gray-700 animate-pulse inline-block" /> : `Page ${currentPage} of ${totalPages}`}
           </span>
           <button
             onClick={handleNextPage}
@@ -148,8 +151,9 @@ const CarList: React.FC<CarListProps> = ({ setOnInsertHandler }) => {
           >
             <FaArrowRight size={18} className="text-white" />
           </button>
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
