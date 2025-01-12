@@ -13,7 +13,7 @@ const (
 )
 
 type Car struct {
-	LicensePlate string   `json:"license_plate" validate:"required,len=7,alphanum"`
+	LicensePlate string   `json:"license_plate" validate:"required,len=7,alphanum,licenseplate"`
 	Make         string   `json:"make" validate:"required,max=45"`
 	Model        string   `json:"model" validate:"required,max=45"`
 	Status       Status   `json:"status" validate:"required,oneof=AVAILABLE RENTED MAINTENANCE"`

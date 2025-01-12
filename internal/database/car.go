@@ -3,22 +3,51 @@ package database
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/go-sql-driver/mysql"
+	"github.com/ntentasd/db-deliverable3/internal/memcached"
 	"github.com/ntentasd/db-deliverable3/internal/models"
 )
 
 type CarDB struct {
-	DB *sql.DB
+	DB       *sql.DB
+	Cache    *memcached.Client
+	CacheTTL int32
 }
 
-func NewCarDatabase(db *sql.DB) *CarDB {
-	return &CarDB{DB: db}
+var (
+	ErrCarNotFound           = fmt.Errorf("car not found")
+	ErrInvalidPageNumber     = fmt.Errorf("invalid page number")
+	ErrInvalidPageSize       = fmt.Errorf("invalid page size")
+	ErrDuplicateLicensePlate = fmt.Errorf("car with this license plate already exists")
+	ErrInvalidStatusChange   = fmt.Errorf("cannot change car's status to/from rented")
+)
+
+func NewCarDatabase(db *sql.DB, cache *memcached.Client, cacheTTL int32) *CarDB {
+	return &CarDB{DB: db, Cache: cache, CacheTTL: cacheTTL}
 }
 
 func (db *CarDB) GetAllCars(page, pageSize int) ([]models.Car, int, error) {
+	cacheKey := fmt.Sprintf("cars:page=%d:size=%d", page, pageSize)
+
+	if cachedData, err := db.Cache.Get(cacheKey); err == nil {
+		fmt.Printf("Cache hit for key: %s\n", cacheKey)
+		var cachedResult struct {
+			Cars  []models.Car
+			Count int
+		}
+		if err := json.Unmarshal(cachedData, &cachedResult); err == nil {
+			return cachedResult.Cars, cachedResult.Count, nil
+		}
+	} else {
+		fmt.Printf("Cache miss for key: %s. Error: %v\n", cacheKey, err)
+	}
+
 	offset := (page - 1) * pageSize
 
 	query := `
@@ -54,10 +83,41 @@ func (db *CarDB) GetAllCars(page, pageSize int) ([]models.Car, int, error) {
 		}
 		cars = append(cars, car)
 	}
+
+	result := struct {
+		Cars  []models.Car
+		Count int
+	}{
+		Cars:  cars,
+		Count: count,
+	}
+	cachedData, _ := json.Marshal(result)
+	err = db.Cache.Set(cacheKey, cachedData, db.CacheTTL)
+	if err != nil {
+		fmt.Printf("Failed to set cache: %v\n", err)
+	} else {
+		fmt.Printf("Data cached successfully with key: %s\n", cacheKey)
+	}
+
 	return cars, count, nil
 }
 
 func (db *CarDB) GetAllAvailableCars(page, pageSize int) ([]models.Car, int, error) {
+	cacheKey := fmt.Sprintf("availCars:page=%d:size=%d", page, pageSize)
+
+	if cachedData, err := db.Cache.Get(cacheKey); err == nil {
+		fmt.Printf("Cache hit for key: %s\n", cacheKey)
+		var cachedResult struct {
+			Cars  []models.Car
+			Count int
+		}
+		if err := json.Unmarshal(cachedData, &cachedResult); err == nil {
+			return cachedResult.Cars, cachedResult.Count, nil
+		}
+	} else {
+		fmt.Printf("Cache miss for key: %s. Error: %v\n", cacheKey, err)
+	}
+
 	offset := (page - 1) * pageSize
 
 	query := `
@@ -94,6 +154,22 @@ func (db *CarDB) GetAllAvailableCars(page, pageSize int) ([]models.Car, int, err
 		}
 		cars = append(cars, car)
 	}
+
+	result := struct {
+		Cars  []models.Car
+		Count int
+	}{
+		Cars:  cars,
+		Count: count,
+	}
+	cachedData, _ := json.Marshal(result)
+	err = db.Cache.Set(cacheKey, cachedData, db.CacheTTL)
+	if err != nil {
+		fmt.Printf("Failed to set cache: %v\n", err)
+	} else {
+		fmt.Printf("Data cached successfully with key: %s\n", cacheKey)
+	}
+
 	return cars, count, nil
 }
 
@@ -200,7 +276,12 @@ func (db *CarDB) InsertCar(car models.Car) error {
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 	_, err := db.DB.Exec(query, strings.ToUpper(car.LicensePlate), car.Make, car.Model, car.Status, car.CostPerKm, strings.ToUpper(car.Location))
-	return err
+	if err != nil {
+		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
+			return ErrDuplicateLicensePlate
+		}
+	}
+	return nil
 }
 
 func (db *CarDB) UpdateCarStatus(tx *sql.Tx, licensePlate, status string) error {
@@ -223,13 +304,32 @@ func (db *CarDB) UpdateCarStatus(tx *sql.Tx, licensePlate, status string) error 
 }
 
 func (db *CarDB) UpdateCar(car models.Car) (models.Car, error) {
+	statusQuery := `
+    SELECT status
+    FROM Cars
+    WHERE license_plate = ?
+  `
+
 	query := `
 		UPDATE Cars
 		SET make = ?, model = ?, status = ?, cost_per_km = ?, location = ?
 		WHERE license_plate = ?
 	`
 
-	_, err := db.DB.Exec(
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var prevStatus string
+	err := db.DB.QueryRowContext(ctx, statusQuery, car.LicensePlate).Scan(&prevStatus)
+	if err != nil {
+		return models.Car{}, err
+	}
+
+	if prevStatus == "RENTED" || car.Status == "RENTED" {
+		return models.Car{}, ErrInvalidStatusChange
+	}
+
+	_, err = db.DB.ExecContext(ctx,
 		query,
 		car.Make,
 		car.Model,
@@ -251,12 +351,6 @@ func (db *CarDB) UpdateCar(car models.Car) (models.Car, error) {
 		Location:     car.Location,
 	}, err
 }
-
-var (
-	ErrCarNotFound       = fmt.Errorf("car not found")
-	ErrInvalidPageNumber = fmt.Errorf("invalid page number")
-	ErrInvalidPageSize   = fmt.Errorf("invalid page size")
-)
 
 func (db *CarDB) DeleteCar(licensePlate string) (models.Car, error) {
 	var car models.Car
@@ -285,20 +379,23 @@ func (db *CarDB) DeleteCar(licensePlate string) (models.Car, error) {
 	return car, nil
 }
 
-func (db *CarDB) GetTotalAvailableCarCount() (int, error) {
-	var count int
-	query := `
-		SELECT COUNT(*)
-		FROM Cars
-		WHERE status = 'AVAILABLE'
-	`
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	err := db.DB.QueryRowContext(ctx, query).Scan(&count)
-	if err != nil {
-		return 0, err
+func (db *CarDB) InvalidateCars(page, pageSize int) error {
+	cacheKeys := []string{
+		fmt.Sprintf("cars:page=%d:size=%d", page, pageSize),
+		fmt.Sprintf("availCars:page=%d:size=%d", page, pageSize),
 	}
-	return count, nil
+
+	for _, cacheKey := range cacheKeys {
+		err := db.Cache.Delete(cacheKey)
+		if err != nil {
+			if err == memcache.ErrCacheMiss {
+				fmt.Printf("Cache key %s not found\n", cacheKey)
+			} else {
+				return fmt.Errorf("failed to delete cache key %s: %v\n", cacheKey, err)
+			}
+		} else {
+			fmt.Printf("Cache invalidated for key: %s\n", cacheKey)
+		}
+	}
+	return nil
 }

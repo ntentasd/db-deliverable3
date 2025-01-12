@@ -14,9 +14,9 @@ import (
 func (srv *Server) SetupCarRoutes() {
 	carGroup := srv.FiberApp.Group("/details")
 
-	validator := validator.New()
+	validate := validator.New()
 
-	_ = validator.RegisterValidation("licenseplate", validateLicensePlate)
+	_ = validate.RegisterValidation("licenseplate", validateLicensePlate)
 
 	authenticatedGroup := srv.FiberApp.Group("/cars", middleware.JWTMiddleware(srv.JWTSecret))
 
@@ -25,6 +25,9 @@ func (srv *Server) SetupCarRoutes() {
 		_, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
+		}
+		if !checkAdmin(c) {
+			return c.Status(http.StatusForbidden).JSON(fiber.Map{"error": "forbidden"})
 		}
 
 		page := c.QueryInt("page", 1)
@@ -168,7 +171,7 @@ func (srv *Server) SetupCarRoutes() {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
 		licensePlate := c.Params("license_plate")
-		if err := validator.Var(licensePlate, "required,licenseplate"); err != nil {
+		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
 		}
 		car, err := srv.Database.CarDB.GetCarByLicensePlate(licensePlate)
@@ -191,24 +194,39 @@ func (srv *Server) SetupCarRoutes() {
 		if err := c.BodyParser(&car); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid input"})
 		}
-		if err := validator.Struct(car); err != nil {
-			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "validation failed"})
+		if err := validate.Struct(car); err != nil {
+			errorMsgs := make(map[string]string)
+			if validationErrors, ok := err.(validator.ValidationErrors); ok {
+				for _, fieldErr := range validationErrors {
+					switch fieldErr.Field() {
+					case "LicensePlate":
+						errorMsgs["license_plate"] = "license plate must consist of 3 letters followed by 4 digits"
+					default:
+						errorMsgs[fieldErr.Field()] = "Invalid value"
+					}
+				}
+			}
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"errors": errorMsgs})
 		}
 		car.Status = "AVAILABLE"
 		if err := srv.Database.CarDB.InsertCar(car); err != nil {
-			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"errors": err.Error()})
+		}
+
+		for page := 1; page <= 10; page++ {
+			srv.Database.CarDB.InvalidateCars(page, 5)
 		}
 		return c.Status(http.StatusCreated).JSON(car)
 	})
 
-	// Update car status
+	// Update car details
 	authenticatedGroup.Put("/:license_plate", func(c *fiber.Ctx) error {
 		_, ok := c.Locals(string(middleware.Email)).(string)
 		if !ok {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "unauthorized"})
 		}
 		licensePlate := c.Params("license_plate")
-		if err := validator.Var(licensePlate, "required,licenseplate"); err != nil {
+		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
 		}
 		var car struct {
@@ -221,7 +239,7 @@ func (srv *Server) SetupCarRoutes() {
 		if err := c.BodyParser(&car); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid data format"})
 		}
-		if err := validator.Struct(car); err != nil {
+		if err := validate.Struct(car); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 		updatedCar, err := srv.Database.CarDB.UpdateCar(models.Car{
@@ -233,8 +251,16 @@ func (srv *Server) SetupCarRoutes() {
 			Location:     car.Location,
 		})
 		if err != nil {
+			if err == database.ErrInvalidStatusChange {
+				return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+			}
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
+
+		for page := 1; page <= 10; page++ {
+			srv.Database.CarDB.InvalidateCars(page, 5)
+		}
+
 		return c.Status(http.StatusOK).JSON(updatedCar)
 	})
 
@@ -248,7 +274,7 @@ func (srv *Server) SetupCarRoutes() {
 			return c.Status(http.StatusForbidden).JSON(fiber.Map{"error": "forbidden"})
 		}
 		licensePlate := c.Params("license_plate")
-		if err := validator.Var(licensePlate, "required,licenseplate"); err != nil {
+		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
 		}
 		car, err := srv.Database.CarDB.DeleteCar(licensePlate)
@@ -258,12 +284,16 @@ func (srv *Server) SetupCarRoutes() {
 			}
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
+
+		for page := 1; page <= 10; page++ {
+			srv.Database.CarDB.InvalidateCars(page, 5)
+		}
 		return c.Status(http.StatusOK).JSON(car)
 	})
 
 	carGroup.Get("/:license_plate/damages", func(c *fiber.Ctx) error {
 		licensePlate := c.Params("license_plate")
-		if err := validator.Var(licensePlate, "required,licenseplate"); err != nil {
+		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
 		}
 
@@ -317,7 +347,7 @@ func (srv *Server) SetupCarRoutes() {
 		if err := c.BodyParser(&damage); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 		}
-		if err := validator.Struct(damage); err != nil {
+		if err := validate.Struct(damage); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": ErrValidationFailed.Error()})
 		}
 
@@ -331,7 +361,7 @@ func (srv *Server) SetupCarRoutes() {
 
 	carGroup.Get("/:license_plate/services", func(c *fiber.Ctx) error {
 		licensePlate := c.Params("license_plate")
-		if err := validator.Var(licensePlate, "required,licenseplate"); err != nil {
+		if err := validate.Var(licensePlate, "required,licenseplate"); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid license plate format"})
 		}
 
@@ -390,7 +420,7 @@ func (srv *Server) SetupCarRoutes() {
 		if err := c.BodyParser(&service); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "invalid request body"})
 		}
-		if err := validator.Struct(service); err != nil {
+		if err := validate.Struct(service); err != nil {
 			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": ErrValidationFailed.Error()})
 		}
 

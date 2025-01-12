@@ -3,6 +3,11 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"log"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/ntentasd/db-deliverable3/config"
+	"github.com/ntentasd/db-deliverable3/internal/memcached"
 )
 
 type Database struct {
@@ -17,14 +22,19 @@ type Database struct {
 	SubscriptionDB *SubscriptionDB
 }
 
-func InitDB(db *sql.DB) (*Database, error) {
-	if db == nil {
-		return nil, fmt.Errorf("database connection cannot be nil")
+func InitDB(config config.DatabaseConfig, client *memcached.Client, ttl int32) (*sql.DB, *Database, error) {
+	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
+		config.User, config.Password, config.Host, config.Port, config.Name,
+	)
+
+	db, err := sql.Open("mysql", connectionString)
+	if err != nil {
+		log.Fatalf("Failed to connect to the database: %v", err)
 	}
 
-	return &Database{
+	return db, &Database{
 		UserDB:         NewUserDatabase(db),
-		CarDB:          NewCarDatabase(db),
+		CarDB:          NewCarDatabase(db, client, ttl),
 		DamageDB:       NewDamageDB(db),
 		ServiceDB:      NewServiceDB(db),
 		TripDB:         NewTripDatabase(db),
