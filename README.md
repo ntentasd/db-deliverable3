@@ -129,3 +129,8 @@ In the profile page, you can view your user data, along with the calculated driv
 ### Manage cars
 
 By logging in as admin, you can navigate to the cars page and register a new car, or adjust a car's details. You can also click on a car and view/change the services and damages recorded for the selected car. The cars page displays paginated data.
+
+---
+## Tracing
+
+You can access the Jaeger UI on port 16686, and inspect the application's traces, if you used docker compose.
