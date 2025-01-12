@@ -1,15 +1,16 @@
 package main
 
 import (
-	"database/sql"
+	"fmt"
 	"log"
 	"os"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/ntentasd/db-deliverable3/config"
 	"github.com/ntentasd/db-deliverable3/internal/database"
+	"github.com/ntentasd/db-deliverable3/internal/memcached"
 	"github.com/ntentasd/db-deliverable3/internal/server"
 )
 
@@ -20,25 +21,31 @@ func main() {
 		log.Fatalf("JWT_SECRET environment variable is not set")
 	}
 
-	// Connect to the database
-	db, err := sql.Open("mysql", "user:password@tcp(mysql:3306)/datadrive?parseTime=true")
-	if err != nil {
-		log.Fatalf("Failed to connect to the database: %v", err)
-	}
-	defer db.Close()
+	memcachedConfig := config.LoadMemcachedConfig()
+
+	cacheClient := memcached.NewClient(memcachedConfig.Host, memcachedConfig.Port)
+
+	// Load the configuration
+	dbConfig := config.LoadDatabaseConfig()
 
 	// Initialize the Database
-	database, err := database.InitDB(db)
+	db, database, err := database.InitDB(dbConfig, cacheClient, 300) //  5 minutes TTL
 	if err != nil {
 		log.Fatalf("Failed to initialize the database: %v", err)
 	}
+	defer db.Close()
 
 	// Initialize the Fiber app
 	app := fiber.New()
 	app.Use(logger.New())
 
+	origin := os.Getenv("FRONTEND_ORIGIN")
+	if origin == "" {
+		origin = "http://localhost:3000"
+	}
+
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:  "http://localhost:3000, http://datadrive-ui",
+		AllowOrigins:  fmt.Sprintf("%s, http://datadrive-ui", origin),
 		AllowMethods:  "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders:  "Content-Type, Authorization",
 		ExposeHeaders: "Content-Length",
