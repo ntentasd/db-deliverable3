@@ -29,13 +29,17 @@ services:
     container_name: datadrive-app
     build:
       context: .
-    ports:
-      - "8000:8000"
     environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: datadrive
       DB_USER: user
       DB_PASSWORD: password
-      DB_NAME: datadrive
       JWT_SECRET: buhbuhbuhbuh
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: 11211
+    ports:
+      - "8000:8000"
     networks:
       - datadrive-network
 
@@ -43,10 +47,10 @@ services:
     container_name: datadrive-ui
     build:
       context: ./frontend/
-    ports:
-      - "3000:80"
     environment:
       REACT_APP_BACKEND_URL: http://localhost:8000
+    ports:
+      - "3000:80"
     networks:
       - datadrive-network
 
