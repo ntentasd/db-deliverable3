@@ -23,7 +23,7 @@ type PayloadTrip struct {
 	StartTime       time.Time     `json:"start_time"`
 	EndTime         *time.Time    `json:"end_time,omitempty"`
 	DrivingBehavior *float64      `json:"driving_behavior,omitempty"`
-	Distance        *float64      `json:"distance,omitempty"`
+	Distance        float64       `json:"distance"`
 	Amount          float64       `json:"amount"`
 	PaymentMethod   PaymentMethod `json:"payment_method"`
 }

@@ -8,13 +8,19 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+
 	"github.com/ntentasd/db-deliverable3/config"
 	"github.com/ntentasd/db-deliverable3/internal/database"
 	"github.com/ntentasd/db-deliverable3/internal/memcached"
+	"github.com/ntentasd/db-deliverable3/internal/middleware"
 	"github.com/ntentasd/db-deliverable3/internal/server"
+	"github.com/ntentasd/db-deliverable3/internal/tracing"
 )
 
 func main() {
+	cleanup := tracing.Init("DatadriveAPI")
+	defer cleanup()
+
 	// Retrieve jwt secret from the environment
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
@@ -29,7 +35,7 @@ func main() {
 	dbConfig := config.LoadDatabaseConfig()
 
 	// Initialize the Database
-	db, database, err := database.InitDB(dbConfig, cacheClient, 300) //  5 minutes TTL
+	db, database, err := database.InitDB(dbConfig, cacheClient, 300) //  5 minutes Cache TTL
 	if err != nil {
 		log.Fatalf("Failed to initialize the database: %v", err)
 	}
@@ -38,6 +44,8 @@ func main() {
 	// Initialize the Fiber app
 	app := fiber.New()
 	app.Use(logger.New())
+	app.Use(middleware.CorrelationMiddleware())
+	// app.Use(middleware.TracingMiddleware())
 
 	origin := os.Getenv("FRONTEND_ORIGIN")
 	if origin == "" {
