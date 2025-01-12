@@ -177,7 +177,7 @@ const TripDetails: React.FC = () => {
         </p>
         <p className="text-lg">
           <strong className="text-gray-400">Distance:</strong>{" "}
-          {trip.distance !== undefined && trip.distance !== null ? (
+          {trip.distance !== undefined && trip.distance !== null && trip.distance !== 0 ? (
             <span>{trip.distance.toFixed(2)} km</span>
           ) : (
             <span className="text-red-300">Not available</span>
@@ -202,13 +202,19 @@ const TripDetails: React.FC = () => {
           )}
         </p>
         <p className="text-lg">
-          <strong className="text-gray-400">Amount:</strong>{" "}
-          {trip.amount !== undefined && trip.amount !== null ? (
-            <span className="font-semibold">
-              {trip.amount.toFixed(2)}
-            </span>
+          {trip.payment_method === "SUBSCRIPTION" ? (
+            <></>
           ) : (
-            <span className="text-red-300">Not available</span>
+            <>
+            <strong className="text-gray-400">Amount:</strong>{" "}
+            {trip.amount !== undefined && trip.amount !== null && trip.amount !== 0 ? (
+              <span className="font-semibold">
+                {trip.amount.toFixed(2)}
+              </span>
+            ) : (
+              <span className="text-red-300">Not available</span>
+            )}
+            </>
           )}
         </p>
       </div>
