@@ -44,55 +44,7 @@ cd db-deliverable3
 docker compose up --build
 ```
 
-## Setup without using docker
-
-### 1. Install dependencies
-
-Ensure the following are installed on your system:
-- [Golang](https://go.dev/dl/)
-- [Node](https://nodejs.org/)
-
-### 2. Set up the environment
-
-1. Create a .env file in the root directory, and setup the following environment variables:
-  - DB_HOST
-  - DB_PORT
-  - DB_NAME
-  - DB_USER
-  - DB_PASSWORD
-  - JWT_SECRET
-
-2. Source the file
-```bash
-source .env
-```
-
-3. Create a .env file in the frontend directory, and set up the backend  url:
-   - REACT_APP_BACKEND_URL (set it to http://localhost:8000)
-
-4. Source the file
-```bash
-source frontend/.env
-```
-
-### 3. Run the api application
-
-```bash
-go run ./cmd/api/main.go
-```
-
-### 4. Install npm dependencies
-
-```bash
-cd frontend
-npm install
-```
-
-### 5. Run the frontend application
-
-```bash
-npm run dev
-```
+### 3. Visit the UI, on `http://localhost`
 
 ---
 ## How to use the app

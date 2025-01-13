@@ -1,8 +1,8 @@
 FROM golang:1.23.4 AS builder
 
 ENV GO111MODULE=on \
-    GOOS=linux \
-    CGO_ENABLED=0
+  GOOS=linux \
+  CGO_ENABLED=0
 
 WORKDIR /app
 
@@ -15,6 +15,8 @@ COPY . .
 RUN go build -o main cmd/api/main.go
 
 FROM alpine:latest
+
+RUN apk add --no-cache curl
 
 WORKDIR /app
 
