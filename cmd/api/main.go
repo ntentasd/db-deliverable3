@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
@@ -46,6 +47,7 @@ func main() {
 	app.Use(logger.New())
 	app.Use(middleware.CorrelationMiddleware())
 	// app.Use(middleware.TracingMiddleware())
+	app.Use(middleware.OriginMiddleware())
 
 	origin := os.Getenv("FRONTEND_ORIGIN")
 	if origin == "" {
@@ -69,6 +71,14 @@ func main() {
 		Database:  database,
 		JWTSecret: jwtSecret,
 	}
+
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.Status(http.StatusOK).JSON(fiber.Map{
+			"status":  "healthy",
+			"message": "service is up and running",
+		})
+	})
+
 	server.SetupCarRoutes()
 	server.SetupTripRoutes()
 	server.SetupUserRoutes()
