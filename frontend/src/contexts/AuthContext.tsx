@@ -36,6 +36,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     setAuthToken(null);
+    window.location.href = "/";
   };
 
   useEffect(() => {
